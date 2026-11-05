@@ -3,10 +3,11 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
-import { CONTINENTS, type Continent } from './data/countries';
+import { CONTINENTS, countries, type Continent } from './data/countries';
 import { LETTERS } from './lib/filters';
 import { PREFERENCES_KEY } from './lib/preferences';
 import type { Preferences } from './lib/game';
+import { THEME_KEY, type ThemePreference } from './lib/theme';
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 let root: Root;
@@ -73,6 +74,34 @@ function continent(name: Continent, scope: ParentNode = container) {
   return scope.querySelectorAll<HTMLInputElement>(
     '.continent-option input',
   )[CONTINENTS.indexOf(name)];
+}
+async function chooseTheme(theme: ThemePreference) {
+  const summary = container.querySelector<HTMLElement>(
+    '.theme-picker summary',
+  )!;
+  const option = container
+    .querySelector<HTMLInputElement>(
+      `.theme-picker input[value="${theme}"]`,
+    )!
+    .closest('label')!
+    .querySelector<HTMLElement>('span')!;
+  await act(async () => {
+    summary.focus();
+    summary.click();
+  });
+  await act(async () => {
+    option.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerType: 'mouse',
+      }),
+    );
+    summary.blur();
+  });
+  expect(
+    container.querySelector<HTMLDetailsElement>('.theme-picker')?.open,
+  ).toBe(true);
+  await click(option);
 }
 
 beforeEach(() => {
@@ -636,5 +665,153 @@ describe('game interface', () => {
         ?.textContent,
     ).toBe('0');
     expect(flag()).toBe('/flags/al.svg');
+  });
+});
+
+describe('appearance and game state', () => {
+  it.each(['linear', 'random'] as const)(
+    'preserves the %s round, score, progress, and filters through every appearance',
+    async (mode) => {
+      await render({ mode, continents: ['Europe'], letters: ['A'] });
+      const current = countries.find(
+        (country) => country.flag === flag(),
+      )!;
+      await answer(current.name);
+      const savedGamePreferences = localStorage.getItem(PREFERENCES_KEY);
+      for (const theme of ['dark', 'light', 'system'] as const) {
+        await chooseTheme(theme);
+        expect(localStorage.getItem(THEME_KEY)).toBe(theme);
+        expect(localStorage.getItem(PREFERENCES_KEY)).toBe(
+          savedGamePreferences,
+        );
+        expect(flag()).toBe(current.flag);
+        expect(
+          container.querySelector('.result-message')?.textContent,
+        ).toContain(current.name);
+        expect(
+          container.querySelector('[data-testid="correct-count"]')
+            ?.textContent,
+        ).toBe('1');
+        expect(
+          container
+            .querySelector('[role="progressbar"]')
+            ?.getAttribute('aria-valuenow'),
+        ).toBe('1');
+        expect(
+          container.querySelector('.round-progress')?.textContent,
+        ).toContain('Flag 1 / 3');
+        expect(
+          container.querySelector('.game-mode-badge')?.textContent,
+        ).toContain(`${mode === 'random' ? 'Random' : 'Linear'} mode`);
+        expect(container.querySelectorAll('.history-chip')).toHaveLength(
+          1,
+        );
+      }
+      await click(button('Next flag'));
+      expect(flag()).not.toBe(current.flag);
+      expect(
+        container.querySelector('.round-progress')?.textContent,
+      ).toContain('Flag 2 / 3');
+    },
+  );
+
+  it('preserves typed guesses, hints, and pending filter/mode edits when switching themes', async () => {
+    await render({ continents: ['Asia'], letters: ['J'] });
+    await typeAnswer('Ja');
+    await click(button('Need a hint?'));
+    await click(button('Countries starting with A'));
+    await click(button('Random'));
+    const preferences = localStorage.getItem(PREFERENCES_KEY);
+    for (const theme of ['dark', 'light'] as const) {
+      await chooseTheme(theme);
+      expect(document.documentElement.dataset.theme).toBe(theme);
+      expect(flag()).toBe('/flags/jp.svg');
+      expect(
+        container.querySelector<HTMLInputElement>('#country-answer')
+          ?.value,
+      ).toBe('Ja');
+      expect(
+        container.querySelector('#answer-feedback')?.textContent,
+      ).toContain('Asia');
+      expect(
+        container.querySelector('.round-progress')?.textContent,
+      ).toContain('Flag 1 / 2');
+      expect(
+        container.querySelector('.game-mode-badge')?.textContent,
+      ).toContain('Linear mode');
+      expect(
+        container.querySelector('.mode-switch button[aria-pressed="true"]')
+          ?.textContent,
+      ).toBe('Random');
+      expect(
+        button('Countries starting with A').getAttribute('aria-pressed'),
+      ).toBe('true');
+      expect(button('Apply & start round').disabled).toBe(false);
+      expect(localStorage.getItem(PREFERENCES_KEY)).toBe(preferences);
+    }
+  });
+
+  it('follows OS changes while settings are open without resetting guesses or attempts', async () => {
+    let dark = false;
+    const listeners = new Set<() => void>();
+    vi.spyOn(window, 'matchMedia').mockReturnValue({
+      get matches() {
+        return dark;
+      },
+      addEventListener: (_: string, listener: () => void) => {
+        listeners.add(listener);
+      },
+      removeEventListener: (_: string, listener: () => void) => {
+        listeners.delete(listener);
+      },
+    } as MediaQueryList);
+    await render({ continents: ['Asia'], letters: ['J'] });
+    await answer('Canada');
+    await click(button('Need a hint?'));
+    await click(button('Open game settings'));
+    await act(async () => {
+      dark = true;
+      for (const listener of listeners) listener();
+    });
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(container.querySelector('dialog')?.open).toBe(true);
+    expect(
+      container.querySelector('[data-testid="incorrect-count"]')
+        ?.textContent,
+    ).toBe('1');
+    await click(button('Close dialog'));
+    expect(flag()).toBe('/flags/jp.svg');
+    expect(
+      container.querySelector<HTMLInputElement>('#country-answer')?.value,
+    ).toBe('Canada');
+    expect(
+      container.querySelector('#answer-feedback')?.textContent,
+    ).toContain('Asia');
+  });
+
+  it('preserves completion results and modals while retaining appearance through a deliberate restart', async () => {
+    await render({ continents: ['Oceania'], letters: ['A'] });
+    await answer('Australia');
+    await click(button('See your results'));
+    await chooseTheme('dark');
+    expect(container.querySelector('#completion-title')).not.toBeNull();
+    expect(container.querySelectorAll('.review-row')).toHaveLength(1);
+    await click(button('How to play'));
+    expect(container.querySelector('dialog')?.open).toBe(true);
+    expect(document.documentElement.dataset.theme).toBe('dark');
+    await click(button('Close dialog'));
+    await chooseTheme('light');
+    expect(container.querySelector('#completion-title')).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="correct-count"]')
+        ?.textContent,
+    ).toBe('1');
+    await click(button('Explore again'));
+    expect(flag()).toBe('/flags/au.svg');
+    expect(document.documentElement.dataset.theme).toBe('light');
+    expect(
+      container.querySelector('[data-testid="correct-count"]')
+        ?.textContent,
+    ).toBe('0');
   });
 });

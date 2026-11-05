@@ -1,0 +1,280 @@
+/* Shared semantic tokens. Theme selection changes this palette once on <html>.
+   Country flag images retain their original colors in both appearances. */
+:root {
+  color-scheme: light;
+  scrollbar-color: var(--border) var(--page-bg);
+  --page-bg: #f6f8fa;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-muted: #f0f5f6;
+  --surface-hover: #eaf3f3;
+  --surface-subtle: #f8fbfb;
+  --text: #203743;
+  --text-secondary: #49616d;
+  --text-muted: #586d78;
+  --text-faint: #5e717b;
+  --icon: #607f8c;
+  --border: #dce5e8;
+  --divider: #e6edef;
+  --accent: #08797e;
+  --accent-hover: #08686d;
+  --on-accent: #ffffff;
+  --accent-soft: #edf7f6;
+  --accent-border: #bedbd8;
+  --focus: #167d85;
+  --focus-halo: #16858b20;
+  --success: #23734f;
+  --success-bg: #edf8f1;
+  --success-border: #b9dcca;
+  --success-icon-bg: #dcefe4;
+  --error: #a64632;
+  --error-bg: #fcf0eb;
+  --error-border: #cd8a76;
+  --error-halo: #bf725d20;
+  --warning: #865d24;
+  --warning-bg: #fbf3e8;
+  --warning-border: #e8d8ba;
+  --track: #e6eef0;
+  --ring-inset: #f0f5f6;
+  --flag-bg: #f0f6f7;
+  --flag-glow: #f7fafb90;
+  --flag-shade: #edf4f550;
+  --grid-line: #dae6e750;
+  --flag-ring: #dce7e880;
+  --decoration: #8babb2;
+  --globe-glow: #e8f3f1;
+  --map-start: #f7fbfa;
+  --map-end: #f0f7f7;
+  --map-pin-halo: #83b9b328;
+  --map-pin-outer: #83b9b312;
+  --shadow-soft: #20374308;
+  --shadow-control: #087e8310;
+  --shadow-flag: #24444e26;
+  --shadow-flag-edge: #20374330;
+  --shadow-modal: #16374230;
+  --backdrop: #19343e62;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page-bg: #10191f;
+  --surface: #19262d;
+  --surface-elevated: #203139;
+  --surface-muted: #22343d;
+  --surface-hover: #2a444c;
+  --surface-subtle: #1c2b33;
+  --text: #e6f0f4;
+  --text-secondary: #c1d2da;
+  --text-muted: #a4b9c4;
+  --text-faint: #9bafb9;
+  --icon: #9eb9c4;
+  --border: #3d535e;
+  --divider: #30454f;
+  --accent: #71d7d1;
+  --accent-hover: #95e6df;
+  --on-accent: #103036;
+  --accent-soft: #1c3b3f;
+  --accent-border: #466e70;
+  --focus: #8fe7df;
+  --focus-halo: #71d7d125;
+  --success: #91d9b7;
+  --success-bg: #1d3b32;
+  --success-border: #497b63;
+  --success-icon-bg: #2c5143;
+  --error: #f4b5a4;
+  --error-bg: #422d2b;
+  --error-border: #bd8070;
+  --error-halo: #f4b5a421;
+  --warning: #edca8c;
+  --warning-bg: #3b3327;
+  --warning-border: #806c48;
+  --track: #304650;
+  --ring-inset: #293d46;
+  --flag-bg: #142329;
+  --flag-glow: #2b454e60;
+  --flag-shade: #101d2350;
+  --grid-line: #6e98a028;
+  --flag-ring: #668a9540;
+  --decoration: #76939e;
+  --globe-glow: #244741;
+  --map-start: #192e33;
+  --map-end: #1b3439;
+  --map-pin-halo: #71d7d128;
+  --map-pin-outer: #71d7d112;
+  --shadow-soft: #00000030;
+  --shadow-control: #00000025;
+  --shadow-flag: #00000070;
+  --shadow-flag-edge: #a3cad330;
+  --shadow-modal: #00000090;
+  --backdrop: #071015b8;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.modal,
+.round-review > div {
+  scrollbar-color: var(--border) var(--surface-elevated);
+}
+
+/* Only paint properties transition. Game animations and layout stay independent. */
+:root[data-theme-ready]
+  :where(
+    body,
+    .site-header,
+    .panel,
+    .flag-stage,
+    .answer-input-wrap,
+    .mode-switch,
+    .country-pool,
+    .game-secondary-actions,
+    .modal,
+    .theme-popover,
+    .result-message,
+    .accuracy-ring > div,
+    .history-chip
+  ) {
+  transition:
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.theme-picker {
+  position: relative;
+  flex-shrink: 0;
+}
+.theme-picker summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 550;
+  list-style: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.theme-picker summary::-webkit-details-marker {
+  display: none;
+}
+.theme-picker summary:hover,
+.theme-picker[open] summary {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-soft);
+}
+.theme-chevron {
+  color: var(--icon);
+}
+.theme-picker[open] .theme-chevron {
+  transform: rotate(180deg);
+}
+.theme-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: 220px;
+  z-index: 20;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-elevated);
+  box-shadow: 0 12px 35px var(--shadow-modal);
+}
+.theme-popover fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.theme-popover legend {
+  color: var(--text-muted);
+  padding: 3px 8px 10px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.theme-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 9px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+}
+.theme-option > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+.theme-option > span {
+  flex: 1;
+}
+.theme-option:hover {
+  background: var(--surface-hover);
+}
+.theme-option.is-selected {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.theme-option:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+@media (max-width: 760px) {
+  .theme-picker summary {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+  .theme-picker summary > span,
+  .theme-picker .theme-chevron {
+    display: none;
+  }
+  .theme-popover {
+    position: fixed;
+    top: 78px;
+    right: 18px;
+    width: min(240px, calc(100vw - 36px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme-ready]
+    :where(
+      body,
+      .site-header,
+      .panel,
+      .flag-stage,
+      .answer-input-wrap,
+      .mode-switch,
+      .country-pool,
+      .game-secondary-actions,
+      .modal,
+      .theme-popover,
+      .result-message,
+      .accuracy-ring > div,
+      .history-chip
+    ) {
+    transition: none;
+  }
+}

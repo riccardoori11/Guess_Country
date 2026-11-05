@@ -45,3 +45,13 @@ npm run preview  # Serve the production build locally
 **Saved settings:** Mode, continents, and letters are saved automatically in this browser. Existing saved preferences from before letter filtering retain their mode and continents and default to all letters. An intentionally empty selection stays empty. Reloading uses the saved settings to set up a fresh round, with guidance if there are no eligible countries.
 
 The pure intersection filter lives in `src/lib/filters.ts`; ordering, shuffling, answer validation, and scoring stay in `src/lib/game.ts`.
+
+## Appearance
+
+Use the appearance control in the header to choose **Light Mode**, **Dark Mode**, or **System Default**. On smaller screens, its sun, moon, or monitor icon shows the selected option. The open picker marks the current selection and supports keyboard controls, Escape, and clicking outside to dismiss.
+
+New visitors follow their device’s color scheme. System Default responds to OS appearance changes while the game is open; explicit Light/Dark selections stay fixed. The selection is saved separately from gameplay preferences under `flag-atlas:appearance:v1`. Unavailable storage falls back safely and still allows switching for the current visit.
+
+A small script in the document head sets the scheme and background before React or application styles load to avoid a flash of the wrong theme. `src/lib/theme.ts` and `src/lib/useTheme.ts` handle persistence and system updates; `src/theme.css` defines shared semantic color tokens for both appearances. Layout and component styles are shared. Country flag artwork retains its original colors. Color transitions respect `prefers-reduced-motion`.
+
+Appearance changes preserve the current flag, typed guess, feedback, hint, scores, progress, filters (including unapplied changes), and game mode. The test suite covers theme persistence, the early bootstrap, system preference changes, listener cleanup, UI controls, game-state preservation, and AA contrast for text and status colors in both palettes.

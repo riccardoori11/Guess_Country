@@ -2,8 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
     <meta name="theme-color" content="#087e83" />
+    <script id="theme-init">
+      // Run before styles and React to prevent a flash of the wrong theme.
+      // Keep the storage key and page colors aligned with src/lib/theme.ts.
+      (() => {
+        let preference = 'system';
+        try {
+          const saved = localStorage.getItem('flag-atlas:appearance:v1');
+          if (saved === 'light' || saved === 'dark') preference = saved;
+        } catch {}
+        const dark =
+          preference === 'dark' ||
+          (preference === 'system' &&
+            typeof matchMedia === 'function' &&
+            matchMedia('(prefers-color-scheme: dark)').matches);
+        const theme = dark ? 'dark' : 'light';
+        const background = dark ? '#10191f' : '#f6f8fa';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.documentElement.style.backgroundColor = background;
+        document
+          .querySelector('meta[name="theme-color"]')
+          .setAttribute('content', background);
+      })();
+    </script>
     <meta
       name="description"
       content="A little flag. A whole world. Test your geography with Flag Atlas: 195 countries, six continents, and endless discoveries."

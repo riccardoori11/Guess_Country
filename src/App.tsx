@@ -30,6 +30,7 @@ import { GameCard } from './components/GameCard';
 import { SettingsPanel } from './components/SettingsPanel';
 import { JourneyHistory, ScorePanel } from './components/ScorePanel';
 import { Modal } from './components/Modal';
+import { ThemePicker } from './components/ThemePicker';
 
 export default function App() {
   const [preferences, setPreferences] = useState(loadPreferences);
@@ -116,6 +117,7 @@ export default function App() {
             </button>
           </nav>
           <div className="header-actions">
+            <ThemePicker />
             <button
               className="mobile-settings icon-button"
               onClick={() => setModal('settings')}
