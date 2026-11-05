@@ -668,6 +668,212 @@ describe('game interface', () => {
   });
 });
 
+describe('answer history', () => {
+  function group(outcome: 'correct' | 'incorrect') {
+    return container.querySelector<HTMLElement>(
+      `.history-group--${outcome}`,
+    )!;
+  }
+
+  function names(outcome: 'correct' | 'incorrect') {
+    return [
+      ...group(outcome).querySelectorAll('.history-chip > span'),
+    ].map((element) => element.textContent);
+  }
+
+  it('replaces recent stops with two counted categories and helpful empty states', async () => {
+    await render();
+    expect(container.textContent).not.toContain('YOUR RECENT STOPS');
+    expect(group('correct').querySelector('h2')?.textContent).toBe(
+      'Correct Answers0',
+    );
+    expect(group('incorrect').querySelector('h2')?.textContent).toBe(
+      'Incorrect Answers0',
+    );
+    expect(
+      group('correct').querySelector('.history-empty')?.textContent,
+    ).toContain('Countries you identify');
+    expect(
+      group('incorrect').querySelector('.history-empty')?.textContent,
+    ).toContain('Revealed and skipped countries');
+    expect(container.querySelectorAll('.history-chip')).toHaveLength(0);
+  });
+
+  it('uses final country outcomes while keeping individual wrong attempts separate', async () => {
+    await render({ continents: ['Europe'], letters: ['A'] });
+    await answer('wrong');
+    await answer('another wrong guess');
+    expect(names('correct')).toEqual([]);
+    expect(names('incorrect')).toEqual([]);
+    expect(
+      container.querySelector('[data-testid="incorrect-count"]')
+        ?.textContent,
+    ).toBe('2');
+
+    await answer('Albania');
+    expect(names('correct')).toEqual(['Albania']);
+    expect(names('incorrect')).toEqual([]);
+    expect(
+      group('correct').querySelector('img')?.getAttribute('src'),
+    ).toBe('/flags/al.svg');
+
+    await click(button('Next flag'));
+    await answer('wrong');
+    await click(button('Reveal answer'));
+    expect(names('incorrect')).toEqual(['Andorra']);
+    expect(button('Reveal answer').disabled).toBe(true);
+    await click(button('Reveal answer'));
+    expect(names('incorrect')).toEqual(['Andorra']);
+
+    await click(button('Next flag'));
+    await click(button('Skip'));
+    expect(names('correct')).toEqual(['Albania']);
+    expect(names('incorrect')).toEqual(['Andorra', 'Austria']);
+    expect(
+      group('incorrect').querySelector('.history-count')?.textContent,
+    ).toBe('2');
+    expect(
+      container.querySelector('[data-testid="incorrect-count"]')
+        ?.textContent,
+    ).toBe('3');
+    expect(
+      container.querySelector('[data-testid="correct-count"]')
+        ?.textContent,
+    ).toBe('1');
+    expect(group('incorrect').querySelectorAll('.lucide-x')).toHaveLength(
+      3,
+    );
+
+    await click(button('See your results'));
+    expect(names('correct')).toEqual(['Albania']);
+    expect(names('incorrect')).toEqual(['Andorra', 'Austria']);
+    expect(container.querySelectorAll('.review-row')).toHaveLength(3);
+  });
+
+  it.each(['linear', 'random'] as const)(
+    'keeps every result from a filtered %s round through completion and clears on restart',
+    async (mode) => {
+      await render({
+        mode,
+        continents: ['Europe', 'Oceania'],
+        letters: ['A', 'F', 'S'],
+      });
+      const eligibleIds = [
+        'al',
+        'ad',
+        'au',
+        'at',
+        'fj',
+        'fi',
+        'fr',
+        'ws',
+        'sm',
+        'rs',
+        'sk',
+        'si',
+        'sb',
+        'es',
+        'se',
+        'ch',
+      ];
+      const correct: string[] = [];
+      const incorrect: string[] = [];
+      const seen: string[] = [];
+
+      for (let i = 0; i < eligibleIds.length; i++) {
+        const current = countries.find(
+          (country) => country.flag === flag(),
+        )!;
+        expect(eligibleIds).toContain(current.id);
+        expect(seen).not.toContain(current.id);
+        seen.push(current.id);
+        if (i % 2 === 0) {
+          await answer(current.name);
+          correct.push(current.name);
+        } else {
+          await click(button(i % 4 === 1 ? 'Reveal answer' : 'Skip'));
+          incorrect.push(current.name);
+        }
+        expect(names('correct')).toEqual(correct);
+        expect(names('incorrect')).toEqual(incorrect);
+        await click(
+          button(
+            i === eligibleIds.length - 1
+              ? 'See your results'
+              : 'Next flag',
+          ),
+        );
+      }
+
+      expect(seen.sort()).toEqual(eligibleIds.sort());
+      expect(container.querySelector('#completion-title')).not.toBeNull();
+      expect(names('correct')).toEqual(correct);
+      expect(names('incorrect')).toEqual(incorrect);
+      expect(correct).toHaveLength(8);
+      expect(incorrect).toHaveLength(8);
+      expect(
+        group('correct').querySelector('.history-count')?.textContent,
+      ).toBe('8');
+      expect(
+        group('incorrect').querySelector('.history-count')?.textContent,
+      ).toBe('8');
+      expect(container.querySelectorAll('.review-row')).toHaveLength(16);
+      expect(
+        container.querySelector('[data-testid="incorrect-count"]')
+          ?.textContent,
+      ).toBe('0');
+
+      await click(button('Explore again'));
+      expect(names('correct')).toEqual([]);
+      expect(names('incorrect')).toEqual([]);
+      expect(container.querySelectorAll('.history-empty')).toHaveLength(2);
+      expect(
+        group('correct').querySelector('.history-count')?.textContent,
+      ).toBe('0');
+      expect(
+        group('incorrect').querySelector('.history-count')?.textContent,
+      ).toBe('0');
+    },
+  );
+
+  it('preserves the active history while editing filters and clears it when applying a new round', async () => {
+    await render({ continents: ['Europe'], letters: ['A'] });
+    await answer('Albania');
+    await click(button('Next flag'));
+    await click(button('Skip'));
+    await click(button('Deselect all continents'));
+    await click(continent('Asia'));
+    await click(button('Deselect all letters'));
+    await click(button('Countries starting with J'));
+    await click(button('Random'));
+    expect(names('correct')).toEqual(['Albania']);
+    expect(names('incorrect')).toEqual(['Andorra']);
+
+    await click(button('Apply & start round'));
+    expect(names('correct')).toEqual([]);
+    expect(names('incorrect')).toEqual([]);
+    const current = countries.find((country) => country.flag === flag())!;
+    expect(['jp', 'jo']).toContain(current.id);
+    await answer(current.name);
+    expect(names('correct')).toEqual([current.name]);
+    expect(names('incorrect')).toEqual([]);
+  });
+
+  it('keeps country names readable if a history flag fails to load', async () => {
+    await render({ continents: ['Europe'], letters: ['A'] });
+    await answer('Albania');
+    const image = group('correct').querySelector('img')!;
+    await act(async () => {
+      image.dispatchEvent(new Event('error'));
+    });
+    expect(image.style.visibility).toBe('hidden');
+    expect(names('correct')).toEqual(['Albania']);
+    expect(
+      group('correct').querySelector('.history-count')?.textContent,
+    ).toBe('1');
+  });
+});
+
 describe('appearance and game state', () => {
   it.each(['linear', 'random'] as const)(
     'preserves the %s round, score, progress, and filters through every appearance',

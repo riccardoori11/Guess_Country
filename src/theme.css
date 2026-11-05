@@ -140,8 +140,8 @@
   mask: url('/world-map.svg') center / contain no-repeat;
 }
 
-/* Stronger semantic accents stay scoped to the journey statistics. */
-:root[data-theme='dark'] .score-panel {
+/* Share semantic accents between journey statistics and answer history. */
+:root[data-theme='dark'] :is(.score-panel, .answer-history) {
   --success: #68b58d;
   --success-bg: #14231a;
   --error: #d9847e;

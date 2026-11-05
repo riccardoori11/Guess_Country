@@ -2,7 +2,6 @@ import {
   Check,
   CircleHelp,
   Flame,
-  Flag,
   Globe2,
   Minus,
   Target,
@@ -112,8 +111,8 @@ export function ScorePanel({ game }: { game: GameState }) {
           {explored ? (
             <>
               <strong>{explored}</strong>{' '}
-              {explored === 1 ? 'country' : 'countries'} explored. Keep your
-              curiosity going.
+              {explored === 1 ? 'country' : 'countries'} explored. Keep
+              your curiosity going.
             </>
           ) : (
             <>
@@ -133,40 +132,5 @@ export function ScorePanel({ game }: { game: GameState }) {
         <span>Accuracy = correct answers ÷ all guesses.</span>
       </p>
     </aside>
-  );
-}
-
-export function JourneyHistory({ game }: { game: GameState }) {
-  if (!game.history.length) return null;
-  const recent = game.history.slice(-5).reverse();
-  return (
-    <section className="journey-history" aria-label="Recent countries">
-      <div className="history-label">
-        <Flag size={13} />
-        YOUR RECENT STOPS
-      </div>
-      <div className="history-list">
-        {recent.map((result) => (
-          <div
-            className={`history-chip ${result.outcome}`}
-            key={result.country.id}
-          >
-            <img
-              src={result.country.flag}
-              alt=""
-              onError={(event) => {
-                event.currentTarget.style.visibility = 'hidden';
-              }}
-            />
-            <span>{result.country.name}</span>
-            {result.outcome === 'correct' ? (
-              <Check size={12} />
-            ) : (
-              <Minus size={12} />
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }

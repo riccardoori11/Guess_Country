@@ -28,7 +28,8 @@ import {
 } from './lib/filters';
 import { GameCard } from './components/GameCard';
 import { SettingsPanel } from './components/SettingsPanel';
-import { JourneyHistory, ScorePanel } from './components/ScorePanel';
+import { ScorePanel } from './components/ScorePanel';
+import { AnswerHistory } from './components/AnswerHistory';
 import { Modal } from './components/Modal';
 import { ThemePicker } from './components/ThemePicker';
 
@@ -198,7 +199,7 @@ export default function App() {
               <Globe2 size={15} />
               <span>Every flag has a story. Let’s discover yours.</span>
             </div>
-            <JourneyHistory game={game} />
+            <AnswerHistory history={game.history} />
           </div>
           <ScorePanel game={game} />
         </div>
