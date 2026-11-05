@@ -121,10 +121,37 @@
   border-color: var(--accent-border);
 }
 
-/* The decorative map can be muted; country flag artwork stays untouched. */
+/* Tint only the decorative map, using the existing SVG silhouette as a mask. */
+:root[data-theme='dark'] .world-map {
+  --map-land: #6f9e82;
+}
 :root[data-theme='dark'] .world-map > img {
-  filter: grayscale(1);
-  opacity: 0.45;
+  visibility: hidden;
+}
+:root[data-theme='dark'] .world-map::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 720 / 295;
+  transform: translateY(-50%);
+  background: var(--map-land);
+  mask: url('/world-map.svg') center / contain no-repeat;
+}
+
+/* Stronger semantic accents stay scoped to the journey statistics. */
+:root[data-theme='dark'] .score-panel {
+  --success: #68b58d;
+  --success-bg: #14231a;
+  --error: #d9847e;
+  --error-bg: #2a1716;
+}
+:root[data-theme='dark'] .score-details > div:has(.correct-icon) strong {
+  color: var(--success);
+}
+:root[data-theme='dark'] .score-details > div:has(.incorrect-icon) strong {
+  color: var(--error);
 }
 
 ::selection {
