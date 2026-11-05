@@ -57,56 +57,74 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --page-bg: #10191f;
-  --surface: #19262d;
-  --surface-elevated: #203139;
-  --surface-muted: #22343d;
-  --surface-hover: #2a444c;
-  --surface-subtle: #1c2b33;
-  --text: #e6f0f4;
-  --text-secondary: #c1d2da;
-  --text-muted: #a4b9c4;
-  --text-faint: #9bafb9;
-  --icon: #9eb9c4;
-  --border: #3d535e;
-  --divider: #30454f;
-  --accent: #71d7d1;
-  --accent-hover: #95e6df;
-  --on-accent: #103036;
-  --accent-soft: #1c3b3f;
-  --accent-border: #466e70;
-  --focus: #8fe7df;
-  --focus-halo: #71d7d125;
-  --success: #91d9b7;
-  --success-bg: #1d3b32;
-  --success-border: #497b63;
-  --success-icon-bg: #2c5143;
-  --error: #f4b5a4;
-  --error-bg: #422d2b;
-  --error-border: #bd8070;
-  --error-halo: #f4b5a421;
-  --warning: #edca8c;
-  --warning-bg: #3b3327;
-  --warning-border: #806c48;
-  --track: #304650;
-  --ring-inset: #293d46;
-  --flag-bg: #142329;
-  --flag-glow: #2b454e60;
-  --flag-shade: #101d2350;
-  --grid-line: #6e98a028;
-  --flag-ring: #668a9540;
-  --decoration: #76939e;
-  --globe-glow: #244741;
-  --map-start: #192e33;
-  --map-end: #1b3439;
-  --map-pin-halo: #71d7d128;
-  --map-pin-outer: #71d7d112;
-  --shadow-soft: #00000030;
-  --shadow-control: #00000025;
-  --shadow-flag: #00000070;
-  --shadow-flag-edge: #a3cad330;
-  --shadow-modal: #00000090;
-  --backdrop: #071015b8;
+  --page-bg: #090909;
+  --surface: #111111;
+  --surface-elevated: #1a1a1a;
+  --surface-muted: #1a1a1a;
+  --surface-hover: #202020;
+  --surface-subtle: #111111;
+  --text: #f5f5f5;
+  --text-secondary: #a1a1a1;
+  --text-muted: #a1a1a1;
+  --text-faint: #8f8f8f;
+  --icon: #a1a1a1;
+  --border: #262626;
+  --divider: #262626;
+  --accent: #d4d4d4;
+  --accent-hover: #e5e5e5;
+  --on-accent: #111111;
+  --accent-soft: #1a1a1a;
+  --accent-border: #454545;
+  --focus: #bdbdbd;
+  --focus-halo: #ffffff0d;
+  --success: #9db5a5;
+  --success-bg: #141414;
+  --success-border: #2d3931;
+  --success-icon-bg: #1a1a1a;
+  --error: #dca89e;
+  --error-bg: #141414;
+  --error-border: #78594f;
+  --error-halo: #dca89e14;
+  --warning: #cdbb9a;
+  --warning-bg: #141414;
+  --warning-border: #544b3a;
+  --track: #262626;
+  --ring-inset: #1a1a1a;
+  --flag-bg: #090909;
+  --flag-glow: #00000000;
+  --flag-shade: #00000000;
+  --grid-line: #ffffff00;
+  --flag-ring: #ffffff00;
+  --decoration: #606060;
+  --globe-glow: #00000000;
+  --map-start: #111111;
+  --map-end: #111111;
+  --map-pin-halo: #ffffff00;
+  --map-pin-outer: #ffffff00;
+  --shadow-soft: #00000000;
+  --shadow-control: #00000000;
+  --shadow-flag: #00000000;
+  --shadow-flag-edge: #ffffff1a;
+  --shadow-modal: #00000000;
+  --backdrop: #000000d9;
+}
+
+/* Keep filter selection distinct without filling the A–Z grid with bright tiles. */
+:root[data-theme='dark'] .letter-option.is-selected {
+  background: var(--surface-elevated);
+  color: var(--text);
+  border-color: var(--accent-border);
+}
+:root[data-theme='dark'] .letter-option.is-selected:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: var(--accent-border);
+}
+
+/* The decorative map can be muted; country flag artwork stays untouched. */
+:root[data-theme='dark'] .world-map > img {
+  filter: grayscale(1);
+  opacity: 0.45;
 }
 
 ::selection {

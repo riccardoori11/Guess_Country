@@ -87,9 +87,11 @@ describe('shared theme palettes', () => {
   ];
   const palettes = blocks.map((block) =>
     Object.fromEntries(
-      [...block[1].matchAll(/--([\w-]+):\s*(#[0-9a-f]{6});/g)].map(
-        (match) => [match[1], match[2]],
-      ),
+      [
+        ...block[1].matchAll(
+          /--([\w-]+):\s*(#[0-9a-f]{6}(?:[0-9a-f]{2})?);/g,
+        ),
+      ].map((match) => [match[1], match[2]]),
     ),
   );
 

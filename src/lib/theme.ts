@@ -3,7 +3,7 @@ export type ResolvedTheme = Exclude<ThemePreference, 'system'>;
 
 export const THEME_KEY = 'flag-atlas:appearance:v1';
 export const COLOR_SCHEME_QUERY = '(prefers-color-scheme: dark)';
-export const THEME_PAGE_COLORS = { light: '#f6f8fa', dark: '#10191f' };
+export const THEME_PAGE_COLORS = { light: '#f6f8fa', dark: '#090909' };
 
 export function loadThemePreference(
   storage?: Pick<Storage, 'getItem'>,
