@@ -9,8 +9,18 @@ import {
   Shuffle,
   SlidersHorizontal,
 } from 'lucide-react';
-import { CONTINENTS, continentCounts, type Continent } from '../data/countries';
-import { eligibleCountries, type Preferences } from '../lib/game';
+import {
+  CONTINENTS,
+  continentCounts,
+  type Continent,
+} from '../data/countries';
+import type { Preferences } from '../lib/game';
+import {
+  LETTERS,
+  eligibleCountries,
+  emptySelectionMessage,
+  type Letter,
+} from '../lib/filters';
 
 interface Props {
   preferences: Preferences;
@@ -25,13 +35,29 @@ export function SettingsPanel({
   changed,
 }: Props) {
   const id = useId();
-  const count = eligibleCountries(preferences.continents).length;
+  const count = eligibleCountries(
+    preferences.continents,
+    preferences.letters,
+  ).length;
+  const emptyMessage = emptySelectionMessage(
+    preferences.continents,
+    preferences.letters,
+    count,
+  );
   function toggle(continent: Continent) {
     onChange({
       ...preferences,
       continents: preferences.continents.includes(continent)
         ? preferences.continents.filter((value) => value !== continent)
         : [...preferences.continents, continent],
+    });
+  }
+  function toggleLetter(letter: Letter) {
+    onChange({
+      ...preferences,
+      letters: preferences.letters.includes(letter)
+        ? preferences.letters.filter((value) => value !== letter)
+        : [...preferences.letters, letter],
     });
   }
   return (
@@ -84,6 +110,7 @@ export function SettingsPanel({
         </div>
         <div className="selection-actions">
           <button
+            aria-label="Select all continents"
             onClick={() =>
               onChange({ ...preferences, continents: [...CONTINENTS] })
             }
@@ -91,7 +118,10 @@ export function SettingsPanel({
             Select all
           </button>
           <span>·</span>
-          <button onClick={() => onChange({ ...preferences, continents: [] })}>
+          <button
+            aria-label="Deselect all continents"
+            onClick={() => onChange({ ...preferences, continents: [] })}
+          >
             Deselect all
           </button>
         </div>
@@ -121,6 +151,64 @@ export function SettingsPanel({
           ))}
         </div>
       </div>
+      <section
+        className="setting-section letter-section"
+        aria-labelledby={`${id}-letters-label`}
+      >
+        <div className="section-label">
+          <h3 className="eyebrow" id={`${id}-letters-label`}>
+            Filter by Letter
+          </h3>
+          <span
+            className="letter-selection-count"
+            aria-label={`${preferences.letters.length} of 26 letters selected`}
+          >
+            {preferences.letters.length}/26
+          </span>
+        </div>
+        <div className="selection-actions">
+          <button
+            type="button"
+            aria-label="Select all letters"
+            onClick={() =>
+              onChange({ ...preferences, letters: [...LETTERS] })
+            }
+          >
+            Select all
+          </button>
+          <span aria-hidden="true">·</span>
+          <button
+            type="button"
+            aria-label="Deselect all letters"
+            onClick={() => onChange({ ...preferences, letters: [] })}
+          >
+            Deselect all
+          </button>
+        </div>
+        <div
+          className="letter-grid"
+          role="group"
+          aria-labelledby={`${id}-letters-label`}
+          aria-describedby={`${id}-letters-note`}
+        >
+          {LETTERS.map((letter) => (
+            <button
+              type="button"
+              className={`letter-option ${preferences.letters.includes(letter) ? 'is-selected' : ''}`}
+              aria-pressed={preferences.letters.includes(letter)}
+              aria-label={`Countries starting with ${letter}`}
+              key={letter}
+              onClick={() => toggleLetter(letter)}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
+        <p className="letter-note" id={`${id}-letters-note`}>
+          Uses country names, not answer aliases. Both game modes work with
+          any letters.
+        </p>
+      </section>
       <div
         className={`country-pool ${!count ? 'empty-pool' : ''}`}
         aria-live="polite"
@@ -130,10 +218,10 @@ export function SettingsPanel({
           <strong>{count} countries</strong> to discover
         </span>
       </div>
-      {!count && (
+      {emptyMessage && (
         <p className="empty-selection" role="status">
           <Info size={14} />
-          Choose at least one continent to start a round.
+          {emptyMessage}
         </p>
       )}
       <button className="start-button" onClick={onStart} disabled={!count}>
@@ -142,8 +230,8 @@ export function SettingsPanel({
       </button>
       <p className="settings-note">
         {changed
-          ? 'Your changes will start a fresh round.'
-          : 'Your preferences are saved automatically.'}
+          ? 'Apply to reset your score and start a fresh round. Your current round continues until then.'
+          : 'Settings save automatically. New rounds apply your filters.'}
       </p>
     </section>
   );

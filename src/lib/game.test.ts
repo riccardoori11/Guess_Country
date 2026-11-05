@@ -3,7 +3,6 @@ import { readFileSync, existsSync } from 'node:fs';
 import { CONTINENTS, countries, continentCounts } from '../data/countries';
 import {
   createSequence,
-  eligibleCountries,
   gameReducer,
   getAccuracy,
   initialGame,
@@ -12,9 +11,15 @@ import {
   type GameState,
   type Preferences,
 } from './game';
+import { LETTERS, eligibleCountries } from './filters';
 
-const allLinear: Preferences = { mode: 'linear', continents: [...CONTINENTS] };
-const country = (id: string) => countries.find((value) => value.id === id)!;
+const allLinear: Preferences = {
+  mode: 'linear',
+  continents: [...CONTINENTS],
+  letters: [...LETTERS],
+};
+const country = (id: string) =>
+  countries.find((value) => value.id === id)!;
 function guess(state: GameState, value: string): GameState {
   return gameReducer(state, {
     type: 'guess',
@@ -89,9 +94,9 @@ describe('country sequences', () => {
   });
   it('ignores the order in which continent checkboxes were selected', () => {
     expect(
-      createSequence({ mode: 'linear', continents: ['Asia', 'Europe'] }),
+      createSequence({ ...allLinear, continents: ['Asia', 'Europe'] }),
     ).toEqual(
-      createSequence({ mode: 'linear', continents: ['Europe', 'Asia'] }),
+      createSequence({ ...allLinear, continents: ['Europe', 'Asia'] }),
     );
   });
   it('filters every continent and multiple continents without duplication', () => {
@@ -101,16 +106,24 @@ describe('country sequences', () => {
       expect(sequence.every((c) => c.continent === continent)).toBe(true);
     }
     const mixed = createSequence(
-      { mode: 'random', continents: ['Oceania', 'South America'] },
+      {
+        ...allLinear,
+        mode: 'random',
+        continents: ['Oceania', 'South America'],
+      },
       rng(7),
     );
     expect(mixed).toHaveLength(26);
     expect(
-      mixed.every((c) => ['Oceania', 'South America'].includes(c.continent)),
+      mixed.every((c) =>
+        ['Oceania', 'South America'].includes(c.continent),
+      ),
     ).toBe(true);
   });
   it('returns no countries for an empty selection', () => {
-    expect(createSequence({ mode: 'random', continents: [] })).toEqual([]);
+    expect(
+      createSequence({ ...allLinear, mode: 'random', continents: [] }),
+    ).toEqual([]);
     expect(initialGame([]).status).toBe('complete');
   });
   it('shuffles all countries once and generates different new rounds', () => {
@@ -169,9 +182,12 @@ describe('strict, friendly answer matching', () => {
     ['fr', '   '],
     ['au', 'Austria'],
     ['sk', 'Slovenia'],
-  ])('rejects ambiguous, partial, or wrong answers %s / %s', (id, answer) => {
-    expect(isCorrectAnswer(country(id), answer)).toBe(false);
-  });
+  ])(
+    'rejects ambiguous, partial, or wrong answers %s / %s',
+    (id, answer) => {
+      expect(isCorrectAnswer(country(id), answer)).toBe(false);
+    },
+  );
   it('accepts every canonical name and every documented alias', () => {
     for (const c of countries)
       for (const name of [c.name, ...c.aliases])
@@ -206,12 +222,18 @@ describe('round lifecycle and scoring', () => {
     state = guess(state, 'Japan');
     expect(guess(state, 'Japan')).toBe(state);
     state = gameReducer(state, { type: 'next', countryId: 'jp' });
-    expect(gameReducer(state, { type: 'next', countryId: 'jp' })).toBe(state);
-    expect(gameReducer(state, { type: 'skip', countryId: 'jp' })).toBe(state);
+    expect(gameReducer(state, { type: 'next', countryId: 'jp' })).toBe(
+      state,
+    );
+    expect(gameReducer(state, { type: 'skip', countryId: 'jp' })).toBe(
+      state,
+    );
   });
   it('requires resolving the flag before advancing', () => {
     const state = initialGame(sequence);
-    expect(gameReducer(state, { type: 'next', countryId: 'jp' })).toBe(state);
+    expect(gameReducer(state, { type: 'next', countryId: 'jp' })).toBe(
+      state,
+    );
   });
   it('tracks skipped and revealed countries separately and reaches completion', () => {
     let state = initialGame(sequence);
@@ -228,7 +250,9 @@ describe('round lifecycle and scoring', () => {
     expect(state.revealed).toBe(1);
     expect(state.correct).toBe(1);
     expect(getAccuracy(state)).toBe(100);
-    expect(gameReducer(state, { type: 'next', countryId: 'fr' })).toBe(state);
+    expect(gameReducer(state, { type: 'next', countryId: 'fr' })).toBe(
+      state,
+    );
   });
   it('maintains current and best streaks, resetting on wrong guesses and skips', () => {
     let state = initialGame(sequence);
@@ -246,7 +270,7 @@ describe('round lifecycle and scoring', () => {
   });
   it('resets all statistics and history on restart or mode/filter changes', () => {
     let state = guess(initialGame(sequence), 'Japan');
-    const next = createSequence({ mode: 'linear', continents: ['Oceania'] });
+    const next = createSequence({ ...allLinear, continents: ['Oceania'] });
     state = gameReducer(state, { type: 'start', sequence: next });
     expect(state).toEqual(initialGame(next));
     expect(state.sequence[0].name).toBe('Australia');

@@ -34,6 +34,8 @@ interface Props {
   mode: GameMode;
   dispatch: Dispatch<GameAction>;
   onRestart: () => void;
+  restartDisabled: boolean;
+  emptyMessage?: string;
   settingsOpen: boolean;
 }
 export function GameCard({
@@ -41,6 +43,8 @@ export function GameCard({
   mode,
   dispatch,
   onRestart,
+  restartDisabled,
+  emptyMessage,
   settingsOpen,
 }: Props) {
   const [answer, setAnswer] = useState('');
@@ -58,14 +62,18 @@ export function GameCard({
   useEffect(() => {
     setAnswer('');
     setHint(false);
+    lastAction.current = 0;
+  }, [country?.id, game.sequence]);
+  useEffect(() => {
     if (!settingsOpen && game.status === 'playing')
       answerRef.current?.focus({ preventScroll: true });
-  }, [country?.id, game.sequence, settingsOpen]);
+  }, [country?.id, game.sequence, game.status, settingsOpen]);
   useEffect(() => {
+    if (settingsOpen) return;
     if (game.status === 'complete')
       completionRef.current?.focus({ preventScroll: true });
     else if (resolved) nextRef.current?.focus({ preventScroll: true });
-  }, [resolved, game.status]);
+  }, [resolved, game.status, settingsOpen]);
 
   function act(action: GameAction) {
     const now = Date.now();
@@ -86,9 +94,7 @@ export function GameCard({
         <Globe2 size={48} />
         <span className="eyebrow">YOUR NEXT ADVENTURE</span>
         <h2>A whole world awaits.</h2>
-        <p>
-          Choose at least one continent in game settings, then start your round.
-        </p>
+        <p>{emptyMessage} Update your game settings to begin.</p>
       </section>
     );
   if (game.status === 'complete')
@@ -107,7 +113,8 @@ export function GameCard({
           What a world of discovery.
         </h2>
         <p>
-          You’ve explored all {game.sequence.length} countries in this round.
+          You’ve explored all {game.sequence.length} countries in this
+          round.
           <br />
           There’s always another adventure waiting.
         </p>
@@ -136,10 +143,20 @@ export function GameCard({
           {game.incorrectAttempts === 1 ? 'attempt' : 'attempts'} ·{' '}
           {game.skipped} skipped · {game.revealed} revealed
         </p>
-        <button className="primary-button" onClick={onRestart}>
+        <button
+          className="primary-button"
+          onClick={onRestart}
+          disabled={restartDisabled}
+        >
           Explore again
           <ArrowRight size={17} />
         </button>
+        {restartDisabled && (
+          <p role="status">
+            Choose filters that include at least one country before
+            starting a new round.
+          </p>
+        )}
         <details className="round-review">
           <summary>
             Review all {game.history.length} countries
@@ -180,7 +197,10 @@ export function GameCard({
         <div>
           <span>
             Flag <strong>{game.index + 1}</strong>
-            <span className="progress-total"> / {game.sequence.length}</span>
+            <span className="progress-total">
+              {' '}
+              / {game.sequence.length}
+            </span>
           </span>
           <span>{game.sequence.length - game.history.length} to go</span>
         </div>
@@ -204,7 +224,11 @@ export function GameCard({
         <span className="stage-cross cross-three" />
         <span className="stage-cross cross-four" />
         <div className="flag-image-wrap">
-          <FlagImage key={country.id} country={country} revealed={resolved} />
+          <FlagImage
+            key={country.id}
+            country={country}
+            revealed={resolved}
+          />
         </div>
         <span className="stage-coordinate coordinate-bottom">
           <span className="tiny-dot" />
@@ -230,7 +254,8 @@ export function GameCard({
           <form
             onSubmit={submit}
             onKeyDown={(event) => {
-              if (event.key === 'Enter' && event.repeat) event.preventDefault();
+              if (event.key === 'Enter' && event.repeat)
+                event.preventDefault();
             }}
           >
             <label className="sr-only" htmlFor="country-answer">

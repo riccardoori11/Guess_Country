@@ -1,10 +1,12 @@
-import { CONTINENTS, type Continent } from '../data/countries';
+import { CONTINENTS } from '../data/countries';
+import { LETTERS } from './filters';
 import type { Preferences } from './game';
 
 export const PREFERENCES_KEY = 'flag-atlas:preferences:v1';
 export const DEFAULT_PREFERENCES: Preferences = {
   mode: 'random',
   continents: [...CONTINENTS],
+  letters: [...LETTERS],
 };
 
 export function loadPreferences(
@@ -19,11 +21,20 @@ export function loadPreferences(
     const record = value as Record<string, unknown>;
     const savedContinents = record.continents;
     const continents = Array.isArray(savedContinents)
-      ? CONTINENTS.filter((continent) => savedContinents.includes(continent))
+      ? CONTINENTS.filter((continent) =>
+          savedContinents.includes(continent),
+        )
       : [...CONTINENTS];
+    // Existing v1 preferences have no letters: preserve their mode/continents
+    // and include every letter. An explicitly saved empty array stays empty.
+    const savedLetters = record.letters;
+    const letters = Array.isArray(savedLetters)
+      ? LETTERS.filter((letter) => savedLetters.includes(letter))
+      : [...LETTERS];
     return {
       mode: record.mode === 'linear' ? 'linear' : 'random',
-      continents: continents as Continent[],
+      continents,
+      letters,
     };
   } catch {
     return DEFAULT_PREFERENCES;

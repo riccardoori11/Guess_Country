@@ -21,6 +21,11 @@ import {
   type Preferences,
 } from './lib/game';
 import { loadPreferences, savePreferences } from './lib/preferences';
+import {
+  LETTERS,
+  eligibleCountries,
+  emptySelectionMessage,
+} from './lib/filters';
 import { GameCard } from './components/GameCard';
 import { SettingsPanel } from './components/SettingsPanel';
 import { JourneyHistory, ScorePanel } from './components/ScorePanel';
@@ -45,25 +50,34 @@ export default function App() {
       (continent) =>
         draft.continents.includes(continent) !==
         preferences.continents.includes(continent),
+    ) ||
+    LETTERS.some(
+      (letter) =>
+        draft.letters.includes(letter) !==
+        preferences.letters.includes(letter),
     );
+  const canStart =
+    eligibleCountries(draft.continents, draft.letters).length > 0;
 
   useEffect(() => {
     savePreferences(draft);
   }, [draft]);
 
   function startRound(next = draft) {
-    if (!next.continents.length) return;
+    const sequence = createSequence(next);
+    if (!sequence.length) return;
     setPreferences(next);
     setDraft(next);
-    dispatch({ type: 'start', sequence: createSequence(next) });
+    dispatch({ type: 'start', sequence });
     setModal(null);
     setAnnouncement(
-      `New ${next.mode} round started with ${next.continents.length === 6 ? 'all continents' : next.continents.join(', ')}.`,
+      `New ${next.mode} round started with ${sequence.length} countries, ${next.continents.length === 6 ? 'all continents' : next.continents.join(', ')}, and ${next.letters.length === LETTERS.length ? 'all letters' : `letters ${next.letters.join(', ')}`}.`,
     );
   }
   function requestRestart() {
+    if (!canStart) return;
     if (game.history.length || game.incorrectAttempts) setModal('restart');
-    else startRound(preferences);
+    else startRound();
   }
 
   const settings = (
@@ -97,7 +111,9 @@ export default function App() {
               <span />
             </a>
             <button onClick={() => setModal('help')}>How to play</button>
-            <button onClick={() => setModal('about')}>About the atlas</button>
+            <button onClick={() => setModal('about')}>
+              About the atlas
+            </button>
           </nav>
           <div className="header-actions">
             <button
@@ -111,6 +127,7 @@ export default function App() {
               className="new-round-button"
               aria-label="New round"
               onClick={requestRestart}
+              disabled={!canStart}
             >
               <RotateCcw size={15} />
               <span>New round</span>
@@ -128,8 +145,8 @@ export default function App() {
               A little flag. <span>A whole world.</span>
             </h1>
             <p>
-              Test your knowledge. Find new favorites. See the world a little
-              differently.
+              Test your knowledge. Find new favorites. See the world a
+              little differently.
             </p>
           </div>
           <div className="intro-aside">
@@ -166,7 +183,13 @@ export default function App() {
               game={game}
               mode={preferences.mode}
               dispatch={dispatch}
-              onRestart={() => startRound(preferences)}
+              onRestart={() => startRound()}
+              restartDisabled={!canStart}
+              emptyMessage={emptySelectionMessage(
+                preferences.continents,
+                preferences.letters,
+                game.sequence.length,
+              )}
               settingsOpen={modal !== null}
             />
             <div className="below-card-note">
@@ -181,17 +204,35 @@ export default function App() {
           <div>
             <Compass size={21} />
             <p>
-              <strong>Go beyond the familiar.</strong> Your next favorite place
-              might be a flag away.
+              <strong>Go beyond the familiar.</strong> Your next favorite
+              place might be a flag away.
             </p>
           </div>
-          <span>
+          <span
+            className="round-filters"
+            aria-label="Active round filters"
+          >
             <span className="small-status-dot" />
             {preferences.continents.length === 6
               ? 'All continents'
               : `${preferences.continents.length} ${preferences.continents.length === 1 ? 'continent' : 'continents'}`}
+            {preferences.letters.length !== LETTERS.length && (
+              <>
+                <span className="strip-dot" aria-hidden="true">
+                  ·
+                </span>
+                <span
+                  className="active-letter-filter"
+                  title={preferences.letters.join(', ')}
+                >
+                  {preferences.letters.length <= 4
+                    ? `Letters ${preferences.letters.join(', ')}`
+                    : `${preferences.letters.length} letters`}
+                </span>
+              </>
+            )}
             <span className="strip-dot">·</span>
-            {game.sequence.length} countries in your round
+            <span>{game.sequence.length} countries in your round</span>
           </span>
         </section>
       </main>
@@ -239,9 +280,14 @@ export default function App() {
               <div>
                 <h3>Make the world your own</h3>
                 <p>
-                  Choose continents and a mode. Random shuffles every country
-                  once; Linear takes you from A to Z. Apply your settings to
-                  begin a fresh round.
+                  Choose continents, starting letters, and a mode
+                  independently. Random shuffles the eligible countries;
+                  Linear takes you from A to Z. All filters must match a
+                  country’s canonical name and continent. Empty selections
+                  or combinations with no countries cannot start a round.
+                  Edits update the available count immediately; starting a
+                  new round applies them and resets your score. Your
+                  current round continues until then.
                 </p>
               </div>
             </div>
@@ -251,8 +297,8 @@ export default function App() {
                 <h3>Recognize the flag</h3>
                 <p>
                   Type the country’s name and press Enter or Check answer.
-                  Capitalization, extra spaces, and accents don’t matter. Common
-                  names and abbreviations work, too.
+                  Capitalization, extra spaces, and accents don’t matter.
+                  Common names and abbreviations work, too.
                 </p>
               </div>
             </div>
@@ -271,12 +317,15 @@ export default function App() {
           <div className="modal-info">
             <Check size={18} />
             <p>
-              Accuracy counts correct answers out of all guesses. Reveals and
-              skips are tracked separately. A wrong guess, reveal, or skip ends
-              your streak; a hint doesn’t.
+              Accuracy counts correct answers out of all guesses. Reveals
+              and skips are tracked separately. A wrong guess, reveal, or
+              skip ends your streak; a hint doesn’t.
             </p>
           </div>
-          <button className="primary-button" onClick={() => setModal(null)}>
+          <button
+            className="primary-button"
+            onClick={() => setModal(null)}
+          >
             Let’s explore
             <ArrowRight size={16} />
           </button>
@@ -318,9 +367,13 @@ export default function App() {
               UN member states
             </a>
             , plus the two observer states: Palestine and the Holy See,
-            represented by the Vatican City flag. Flags are local SVG assets
-            from{' '}
-            <a href="https://flagpedia.net" target="_blank" rel="noreferrer">
+            represented by the Vatican City flag. Flags are local SVG
+            assets from{' '}
+            <a
+              href="https://flagpedia.net"
+              target="_blank"
+              rel="noreferrer"
+            >
               Flagpedia
             </a>
             .
@@ -336,15 +389,16 @@ export default function App() {
               UN M49 geographic regions
             </a>
             , splitting the Americas into North America (including Central
-            America and the Caribbean) and South America. Russia is in Europe;
-            Türkiye, Cyprus, Armenia, Azerbaijan, Georgia, Kazakhstan,
-            Indonesia, and Timor-Leste are in Asia. Egypt is in Africa.
+            America and the Caribbean) and South America. Russia is in
+            Europe; Türkiye, Cyprus, Armenia, Azerbaijan, Georgia,
+            Kazakhstan, Indonesia, and Timor-Leste are in Asia. Egypt is in
+            Africa.
           </p>
           <h3>Made for a little focus</h3>
           <p>
             No timer, no account, no leaderboard. Preferences stay in this
-            browser. Your score lasts for the current round. Maps are adapted
-            from public domain{' '}
+            browser. Your score lasts for the current round. Maps are
+            adapted from public domain{' '}
             <a
               href="https://www.naturalearthdata.com/"
               target="_blank"
@@ -362,16 +416,22 @@ export default function App() {
           onClose={() => setModal(null)}
         >
           <p className="modal-intro">
-            Starting a new round resets your current score and progress. Your
-            active mode and continent selection will stay the same.
+            Starting a new round resets your current score and progress.{' '}
+            {changed
+              ? 'Your updated mode, continent, and letter selections will be applied.'
+              : 'Your mode, continent, and letter selections will stay the same.'}
           </p>
           <div className="modal-actions">
-            <button className="secondary-button" onClick={() => setModal(null)}>
+            <button
+              className="secondary-button"
+              onClick={() => setModal(null)}
+            >
               Keep exploring
             </button>
             <button
               className="primary-button"
-              onClick={() => startRound(preferences)}
+              onClick={() => startRound()}
+              disabled={!canStart}
             >
               Start new round
               <ArrowRight size={16} />

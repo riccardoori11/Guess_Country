@@ -23,6 +23,25 @@ npm run preview  # Serve the production build locally
 - Type the country name; press Enter or select **Check answer**.
 - Wrong guesses can be retried. A continent hint is free; **Reveal answer** and **Skip** resolve the flag without a correct answer. **Next flag** advances after an answer, skip, or reveal.
 - Random mode uses a Fisher–Yates shuffle, without repeats. Linear mode uses explicit English alphabetical collation, independent of checkbox order and browser locale.
-- Select any combination of continents and choose **Apply & start round**. This generates a fresh round and resets scores. **Deselect all** disables starting and explains how to continue.
+- Select any combination of continents and starting letters, independently of Linear/Random mode, then choose **Apply & start round**. Each country must match both filters. All A–Z letters are selected by default.
 - The round ends after every eligible country is resolved and advanced. Results include the full country review and a restart option.
 - On smaller screens, the settings icon in the header opens the same controls in a dialog.
+
+## Filter behavior
+
+**Filter by Letter** uses the first letter of each canonical country name. Aliases are still accepted as answers but do not change classification: Côte d’Ivoire is under C (even if you answer “Ivory Coast”), Myanmar is under M, and Vatican City is under V. Accents are normalized for the English A–Z grid.
+
+| Selected continents | Selected letters | Eligible countries        |
+| ------------------- | ---------------- | ------------------------- |
+| Europe              | A                | Albania, Andorra, Austria |
+| Asia                | J                | Japan, Jordan             |
+| South America       | B                | Bolivia, Brazil           |
+| Africa              | M, N             | 10 countries              |
+
+**During a round:** Editing mode, continents, or letters updates the available count immediately. The current flag, guess, hint, score, and sequence continue until you start another round. **Apply & start round**, the header’s **New round**, and **Explore again** all apply the current settings and reset all progress and statistics. The header asks for confirmation when you have made progress. Linear sorts the resulting pool alphabetically; Random shuffles that same pool once, without repeats.
+
+**Empty selections:** Selecting no continents means zero eligible countries, never “all continents.” Selecting no letters also means zero countries. Both cases disable every start/restart control and explain what to select. A nonempty selection with no matches (such as Europe + J, or any continent + X) also disables starting and asks you to adjust your filters. An existing round can still be played while draft filters have no matches.
+
+**Saved settings:** Mode, continents, and letters are saved automatically in this browser. Existing saved preferences from before letter filtering retain their mode and continents and default to all letters. An intentionally empty selection stays empty. Reloading uses the saved settings to set up a fresh round, with guidance if there are no eligible countries.
+
+The pure intersection filter lives in `src/lib/filters.ts`; ordering, shuffling, answer validation, and scoring stay in `src/lib/game.ts`.

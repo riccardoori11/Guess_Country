@@ -1,9 +1,11 @@
-import { countries, type Continent, type Country } from '../data/countries';
+import type { Continent, Country } from '../data/countries';
+import { eligibleCountries, type Letter } from './filters';
 
 export type GameMode = 'random' | 'linear';
 export interface Preferences {
   mode: GameMode;
   continents: Continent[];
+  letters: Letter[];
 }
 export type Outcome = 'correct' | 'revealed' | 'skipped';
 export interface Result {
@@ -45,7 +47,10 @@ export function normalizeAnswer(value: string): string {
     .trim();
 }
 
-export function isCorrectAnswer(country: Country, answer: string): boolean {
+export function isCorrectAnswer(
+  country: Country,
+  answer: string,
+): boolean {
   const normalized = normalizeAnswer(answer);
   return (
     normalized.length > 0 &&
@@ -55,19 +60,16 @@ export function isCorrectAnswer(country: Country, answer: string): boolean {
   );
 }
 
-export function eligibleCountries(continents: readonly Continent[]): Country[] {
-  return countries.filter((country) => continents.includes(country.continent));
-}
-
 export function createSequence(
   preferences: Preferences,
   random: () => number = Math.random,
 ): Country[] {
   // An explicit English collator gives the same order regardless of browser locale.
   const collator = new Intl.Collator('en', { sensitivity: 'base' });
-  const sequence = eligibleCountries(preferences.continents).sort((a, b) =>
-    collator.compare(a.name, b.name),
-  );
+  const sequence = eligibleCountries(
+    preferences.continents,
+    preferences.letters,
+  ).sort((a, b) => collator.compare(a.name, b.name));
   if (preferences.mode === 'random') {
     // Fisher–Yates: every eligible country occurs exactly once.
     for (let i = sequence.length - 1; i > 0; i--) {
@@ -118,7 +120,10 @@ function resolve(state: GameState, outcome: Outcome): GameState {
   };
 }
 
-export function gameReducer(state: GameState, action: GameAction): GameState {
+export function gameReducer(
+  state: GameState,
+  action: GameAction,
+): GameState {
   if (action.type === 'start') return initialGame(action.sequence);
   if (
     state.status === 'complete' ||
@@ -139,7 +144,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
   }
   if (state.status !== 'playing') return state;
   if (action.type === 'reveal' || action.type === 'skip')
-    return resolve(state, action.type === 'reveal' ? 'revealed' : 'skipped');
+    return resolve(
+      state,
+      action.type === 'reveal' ? 'revealed' : 'skipped',
+    );
   const normalized = normalizeAnswer(action.value);
   if (!normalized) return { ...state, feedback: 'empty' };
   // Repeated Enter / button clicks on an unchanged wrong answer count once.
