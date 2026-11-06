@@ -18,6 +18,14 @@ npm run build    # Type check and production build into dist/
 npm run preview  # Serve the production build locally
 ```
 
+## Hosting
+
+The production site is static: visitors do not need Node, npm, or a running
+development server. [DEPLOYMENT.md](DEPLOYMENT.md) explains connecting a
+**private GitHub repository to Cloudflare Pages**, including the exact build
+settings, security review, updates, and rollback. No deployment has been
+triggered by adding these files.
+
 ## Play
 
 - Type the country name; press Enter or select **Check answer**.

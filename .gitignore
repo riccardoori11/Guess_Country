@@ -5,3 +5,10 @@ dist/
 test-results/
 playwright-report/
 .openai/*.tar.gz
+
+# Local secrets; only placeholder examples belong in Git.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
