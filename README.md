@@ -1,4 +1,6 @@
-Try to guess the country by their flag
+# FlagAtlas
+
+Identify countries by their flags.
 
 ## Run locally
 

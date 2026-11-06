@@ -98,7 +98,7 @@ export default function App() {
       </a>
       <header className="site-header">
         <div className="header-inner">
-          <a className="brand" href="#play" aria-label="Flag Atlas home">
+          <a className="brand" href="#play" aria-label="FlagAtlas home">
             <span className="brand-mark">
               <Flag size={23} strokeWidth={1.8} />
             </span>
