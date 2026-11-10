@@ -1,4 +1,5 @@
 @import './theme.css';
+@import './game-modes.css';
 
 @font-face {
   font-family: 'DM Sans';

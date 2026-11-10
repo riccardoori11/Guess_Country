@@ -1,0 +1,78 @@
+.activity-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 22px;
+}
+.activity-selector button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 17px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+}
+.activity-selector button:hover {
+  background: var(--surface-hover);
+}
+.activity-selector button.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.activity-selector > span {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.auto-advance-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  min-height: 28px;
+}
+.auto-advance-option input { accent-color: var(--accent); }
+.map-loading { padding: 60px 24px; text-align: center; }
+.placement-history { gap: 10px; }
+.placement-results { list-style: none; padding: 0; margin: 0; }
+.placement-results li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-top: 1px solid var(--divider);
+  padding: 12px 0;
+  font-size: 12px;
+}
+.placement-results li > svg { color: var(--success); margin-top: 2px; }
+.placement-results li.revealed > svg { color: var(--warning); }
+.placement-results strong { font-weight: 600; }
+.placement-results p { color: var(--text-muted); margin: 5px 0 0; line-height: 1.6; }
+@media (min-width: 761px) {
+  .game-layout--placement { grid-template-columns: 220px minmax(0, 1fr); }
+  .game-layout--placement .score-column {
+    grid-column: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .game-layout--placement .accuracy-note { grid-column: 1 / -1; margin: 0; }
+}
+@media (max-width: 1050px) and (min-width: 761px) {
+  .game-layout--placement .score-panel { display: block; }
+}
+@media (max-width: 760px) {
+  .activity-selector { flex-wrap: wrap; margin-bottom: 18px; }
+  .activity-selector button { flex: 1; font-size: 12px; padding: 10px 8px; gap: 6px; }
+  .activity-selector > span { width: 100%; margin: 4px 0 0; text-align: center; }
+  .auto-advance-option { font-size: 11px; line-height: 1.6; }
+}

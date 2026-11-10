@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useReducer, useState } from 'react';
 import {
   ArrowRight,
   BookOpen,
@@ -33,15 +33,38 @@ import { AnswerHistory } from './components/AnswerHistory';
 import { Modal } from './components/Modal';
 import { ThemePicker } from './components/ThemePicker';
 
+const PlacementGame = lazy(() =>
+  import('./components/PlacementGame').then((module) => ({
+    default: module.PlacementGame,
+  })),
+);
+type Activity = 'flag' | 'placement';
+
 export default function App() {
-  const [preferences, setPreferences] = useState(loadPreferences);
-  const [draft, setDraft] = useState<Preferences>(preferences);
-  const initialSequence = useMemo(() => createSequence(preferences), []);
-  const [game, dispatch] = useReducer(
-    gameReducer,
-    initialSequence,
-    initialGame,
+  const [savedPreferences] = useState(loadPreferences);
+  const [activity, setActivity] = useState<Activity>('flag');
+  const [placementVisited, setPlacementVisited] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(false);
+  const [rounds, setRounds] = useState({
+    flag: { preferences: savedPreferences, draft: savedPreferences },
+    placement: { preferences: savedPreferences, draft: savedPreferences },
+  });
+  const { preferences, draft } = rounds[activity];
+  const initialSequences = useMemo(
+    () => ({
+      flag: createSequence(savedPreferences),
+      placement: createSequence(savedPreferences),
+    }),
+    [savedPreferences],
   );
+  const [flagGame, flagDispatch] = useReducer(
+    gameReducer, initialSequences.flag, initialGame,
+  );
+  const [placementGame, placementDispatch] = useReducer(
+    gameReducer, initialSequences.placement, initialGame,
+  );
+  const game = activity === 'flag' ? flagGame : placementGame;
+  const dispatch = activity === 'flag' ? flagDispatch : placementDispatch;
   const [modal, setModal] = useState<
     'help' | 'about' | 'settings' | 'restart' | null
   >(null);
@@ -65,11 +88,26 @@ export default function App() {
     savePreferences(draft);
   }, [draft]);
 
+  function setDraft(next: Preferences) {
+    setRounds((current) => ({
+      ...current,
+      [activity]: { ...current[activity], draft: next },
+    }));
+  }
+  function switchActivity(next: Activity) {
+    if (next === 'placement') setPlacementVisited(true);
+    setActivity(next);
+    setAnnouncement(
+      `${next === 'flag' ? 'Guess the Flag' : 'Place the Country'}. Your round has been preserved.`,
+    );
+  }
   function startRound(next = draft) {
     const sequence = createSequence(next);
     if (!sequence.length) return;
-    setPreferences(next);
-    setDraft(next);
+    setRounds((current) => ({
+      ...current,
+      [activity]: { preferences: next, draft: next },
+    }));
     dispatch({ type: 'start', sequence });
     setModal(null);
     setAnnouncement(
@@ -164,7 +202,24 @@ export default function App() {
             </div>
           </div>
         </section>
-        <div className="game-layout">
+        <div className="activity-selector" role="group" aria-label="Game mode">
+          <button
+            className={activity === 'flag' ? 'selected' : ''}
+            aria-pressed={activity === 'flag'}
+            onClick={() => switchActivity('flag')}
+          >
+            <Flag size={17} /> Guess the Flag
+          </button>
+          <button
+            className={activity === 'placement' ? 'selected' : ''}
+            aria-pressed={activity === 'placement'}
+            onClick={() => switchActivity('placement')}
+          >
+            <MapPin size={17} /> Place the Country
+          </button>
+          <span>Two ways to explore. Your progress stays with you.</span>
+        </div>
+        <div className={`game-layout ${activity === 'placement' ? 'game-layout--placement' : ''}`}>
           <aside className="settings-column" aria-label="Game settings">
             {settings}
             <div className="good-to-know">
@@ -174,34 +229,66 @@ export default function App() {
               <div>
                 <span className="eyebrow">A FRIENDLY LITTLE TIP</span>
                 <p>
-                  Short names work, too.
-                  <br />
-                  “USA”, “UK”, and “UAE” are all welcome here.
+                  {activity === 'flag' ? <>
+                    Short names work, too.<br />
+                    “USA”, “UK”, and “UAE” are all welcome here.
+                  </> : <>
+                    Zoom in for a closer look.<br />
+                    Neutral circles make the smallest countries selectable.
+                  </>}
                 </p>
               </div>
             </div>
           </aside>
           <div className="center-column">
-            <GameCard
-              game={game}
-              mode={preferences.mode}
-              dispatch={dispatch}
-              onRestart={() => startRound()}
-              restartDisabled={!canStart}
-              emptyMessage={emptySelectionMessage(
-                preferences.continents,
-                preferences.letters,
-                game.sequence.length,
-              )}
-              settingsOpen={modal !== null}
-            />
+            <div hidden={activity !== 'flag'}>
+              <GameCard
+                game={flagGame}
+                mode={rounds.flag.preferences.mode}
+                dispatch={flagDispatch}
+                onRestart={() => startRound()}
+                restartDisabled={!canStart}
+                emptyMessage={emptySelectionMessage(
+                  rounds.flag.preferences.continents,
+                  rounds.flag.preferences.letters,
+                  flagGame.sequence.length,
+                )}
+                settingsOpen={modal !== null || activity !== 'flag'}
+              />
+            </div>
+            {placementVisited && <div hidden={activity !== 'placement'}>
+              <label className="auto-advance-option">
+                <input
+                  type="checkbox"
+                  checked={autoAdvance}
+                  onChange={(event) => setAutoAdvance(event.target.checked)}
+                />
+                Automatically advance after a correct answer
+              </label>
+              <Suspense fallback={<section className="panel map-loading" role="status">Loading your world map…</section>}>
+                <PlacementGame
+                  game={placementGame}
+                  mode={rounds.placement.preferences.mode}
+                  dispatch={placementDispatch}
+                  onRestart={() => startRound()}
+                  restartDisabled={!canStart}
+                  emptyMessage={emptySelectionMessage(
+                    rounds.placement.preferences.continents,
+                    rounds.placement.preferences.letters,
+                    placementGame.sequence.length,
+                  )}
+                  settingsOpen={modal !== null || activity !== 'placement'}
+                  autoAdvance={autoAdvance}
+                />
+              </Suspense>
+            </div>}
             <div className="below-card-note">
               <Globe2 size={15} />
-              <span>Every flag has a story. Let’s discover yours.</span>
+              <span>{activity === 'flag' ? 'Every flag has a story. Let’s discover yours.' : 'One blank map. A whole world to discover.'}</span>
             </div>
-            <AnswerHistory history={game.history} />
+            <AnswerHistory history={game.history} placement={activity === 'placement'} />
           </div>
-          <ScorePanel game={game} />
+          <ScorePanel game={game} placement={activity === 'placement'} />
         </div>
         <section className="bottom-strip">
           <div>
@@ -283,8 +370,10 @@ export default function App() {
               <div>
                 <h3>Make the world your own</h3>
                 <p>
-                  Choose continents, starting letters, and a mode
-                  independently. Random shuffles the eligible countries;
+                  Choose Guess the Flag or Place the Country. Each game
+                  keeps its own progress while you switch. Choose continents,
+                  starting letters, and an order independently.
+                  Random shuffles the eligible countries;
                   Linear takes you from A to Z. All filters must match a
                   country’s canonical name and continent. Empty selections
                   or combinations with no countries cannot start a round.
@@ -297,11 +386,15 @@ export default function App() {
             <div>
               <span>02</span>
               <div>
-                <h3>Recognize the flag</h3>
+                <h3>Recognize a flag. Locate a country.</h3>
                 <p>
                   Type the country’s name and press Enter or Check answer.
                   Capitalization, extra spaces, and accents don’t matter.
                   Common names and abbreviations work, too.
+                  In Place the Country, click a country’s boundaries or a
+                  neutral small-country circle. Drag to pan; use the zoom
+                  controls or pinch to see more detail. The map also supports
+                  keyboard navigation, explained below it.
                 </p>
               </div>
             </div>
@@ -313,6 +406,13 @@ export default function App() {
                   Try again after a wrong guess, ask for a continent hint,
                   reveal the answer, or skip. Select Next flag when you’re
                   ready. Every country appears once per round.
+                  On the map, incorrect selections flash red and you can
+                  retry. Located countries stay green. Use Next Country,
+                  or enable automatic advance. Every click counts as an
+                  attempt; completed countries can still be selected.
+                  Use Show answer to center and highlight the country in amber,
+                  then select Next Country. Shown answers are tracked as
+                  revealed and do not earn correct-answer credit.
                 </p>
               </div>
             </div>
@@ -410,6 +510,15 @@ export default function App() {
               Natural Earth
             </a>{' '}
             data; type is DM Sans.
+          </p>
+          <h3>About the blank map</h3>
+          <p>
+            The placement map uses Natural Earth geographic boundaries,
+            joined by ISO country codes. Small countries have neutral
+            point targets. Disconnected territories count together.
+            Geographic boundaries follow the source’s cartographic policy;
+            their display does not imply a position on disputed sovereignty.
+            Both games use the same 195-country list and continent filters.
           </p>
         </Modal>
       )}

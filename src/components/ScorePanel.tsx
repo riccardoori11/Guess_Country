@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { getAccuracy, type GameState } from '../lib/game';
 
-export function ScorePanel({ game }: { game: GameState }) {
+export function ScorePanel({ game, placement = false }: { game: GameState; placement?: boolean }) {
   const accuracy = getAccuracy(game);
   const attempts = game.correct + game.incorrectAttempts;
   const explored = game.history.length;
@@ -49,7 +49,7 @@ export function ScorePanel({ game }: { game: GameState }) {
               <i className="stat-icon correct-icon">
                 <Check size={14} />
               </i>
-              Correct answers
+              {placement ? 'Countries located' : 'Correct answers'}
             </span>
             <strong data-testid="correct-count">{game.correct}</strong>
           </div>
@@ -64,7 +64,7 @@ export function ScorePanel({ game }: { game: GameState }) {
               {game.incorrectAttempts}
             </strong>
           </div>
-          <div>
+          {!placement && <div>
             <span>
               <i className="stat-icon skipped-icon">
                 <Minus size={14} />
@@ -72,7 +72,7 @@ export function ScorePanel({ game }: { game: GameState }) {
               Skipped
             </span>
             <strong>{game.skipped}</strong>
-          </div>
+          </div>}
           {game.revealed > 0 && (
             <div>
               <span>
@@ -98,7 +98,7 @@ export function ScorePanel({ game }: { game: GameState }) {
         </div>
       </section>
       <section className="world-panel panel">
-        <span className="eyebrow">ONE FLAG AT A TIME</span>
+        <span className="eyebrow">{placement ? 'ONE COUNTRY AT A TIME' : 'ONE FLAG AT A TIME'}</span>
         <div className="world-map">
           <img src="/world-map.svg" alt="" />
           <span className="map-pin pin-one" />
@@ -108,7 +108,10 @@ export function ScorePanel({ game }: { game: GameState }) {
         </div>
         <h3>The world is your playground.</h3>
         <p>
-          {explored ? (
+          {placement ? <>
+            <strong>{game.correct} / {game.sequence.length}</strong> countries located.
+            <br />Located countries stay green; shown answers are amber.
+          </> : explored ? (
             <>
               <strong>{explored}</strong>{' '}
               {explored === 1 ? 'country' : 'countries'} explored. Keep

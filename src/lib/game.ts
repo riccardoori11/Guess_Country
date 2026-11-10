@@ -1,4 +1,4 @@
-import type { Continent, Country } from '../data/countries';
+import { countries, type Continent, type Country } from '../data/countries';
 import { eligibleCountries, type Letter } from './filters';
 
 export type GameMode = 'random' | 'linear';
@@ -12,6 +12,7 @@ export interface Result {
   country: Country;
   outcome: Outcome;
   attempts: number;
+  incorrectSelections: string[];
 }
 export interface GameState {
   sequence: Country[];
@@ -25,12 +26,14 @@ export interface GameState {
   streak: number;
   bestStreak: number;
   currentAttempts: number;
+  currentSelections: string[];
   lastGuess: string;
   history: Result[];
 }
 export type GameAction =
   | { type: 'start'; sequence: Country[] }
   | { type: 'guess'; countryId: string; value: string }
+  | { type: 'place'; countryId: string; selectedId: string }
   | { type: 'reveal'; countryId: string }
   | { type: 'skip'; countryId: string }
   | { type: 'next'; countryId: string };
@@ -93,6 +96,7 @@ export function initialGame(sequence: Country[]): GameState {
     streak: 0,
     bestStreak: 0,
     currentAttempts: 0,
+    currentSelections: [],
     lastGuess: '',
     history: [],
   };
@@ -115,6 +119,7 @@ function resolve(state: GameState, outcome: Outcome): GameState {
         country: state.sequence[state.index],
         outcome,
         attempts: state.currentAttempts + Number(outcome === 'correct'),
+        incorrectSelections: [...state.currentSelections],
       },
     ],
   };
@@ -139,6 +144,7 @@ export function gameReducer(
       status: index >= state.sequence.length ? 'complete' : 'playing',
       feedback: 'idle',
       currentAttempts: 0,
+      currentSelections: [],
       lastGuess: '',
     };
   }
@@ -148,6 +154,20 @@ export function gameReducer(
       state,
       action.type === 'reveal' ? 'revealed' : 'skipped',
     );
+  if (action.type === 'place') {
+    // Map answers use stable ISO IDs, independently of localized names/aliases.
+    if (!countries.some((country) => country.id === action.selectedId))
+      return state;
+    if (action.selectedId === action.countryId) return resolve(state, 'correct');
+    return {
+      ...state,
+      feedback: 'incorrect',
+      incorrectAttempts: state.incorrectAttempts + 1,
+      currentAttempts: state.currentAttempts + 1,
+      currentSelections: [...state.currentSelections, action.selectedId],
+      streak: 0,
+    };
+  }
   const normalized = normalizeAnswer(action.value);
   if (!normalized) return { ...state, feedback: 'empty' };
   // Repeated Enter / button clicks on an unchanged wrong answer count once.

@@ -1,9 +1,33 @@
 import { useId } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, Eye, X } from 'lucide-react';
 import type { Result } from '../lib/game';
+import { countries } from '../data/countries';
 
-export function AnswerHistory({ history }: { history: Result[] }) {
+export function AnswerHistory({ history, placement = false }: { history: Result[]; placement?: boolean }) {
   const headingId = useId();
+  if (placement) return (
+    <section className="answer-history placement-history" aria-labelledby={headingId}>
+      <h2 className="history-label" id={headingId}>Recent placements</h2>
+      {history.length ? <ol className="placement-results">
+        {history.slice(-6).reverse().map((result) => (
+          <li key={result.country.id} className={result.outcome}>
+            {result.outcome === 'revealed'
+              ? <Eye size={16} aria-hidden="true" />
+              : <Check size={16} aria-hidden="true" />}
+            <div>
+              <strong>Locate: {result.country.name}</strong>
+              <p>{result.incorrectSelections.length
+                ? `You selected ${result.incorrectSelections.map((id) => countries.find((country) => country.id === id)?.name ?? id).join(', ')}. `
+                : result.outcome === 'correct' ? 'Correct on your first try. ' : ''}
+                {result.outcome === 'revealed' && 'Answer shown. '}
+                Correct answer: {result.country.name}.
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol> : <p className="history-empty">Your located countries and incorrect selections will appear here.</p>}
+    </section>
+  );
   const groups = [
     {
       type: 'correct',

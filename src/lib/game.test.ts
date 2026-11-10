@@ -287,3 +287,84 @@ describe('round lifecycle and scoring', () => {
     expect(state.history).toHaveLength(195);
   });
 });
+
+describe('country placement', () => {
+  const sequence = [country('fi'), country('fr')];
+  function place(state: GameState, selectedId: string) {
+    return gameReducer(state, {
+      type: 'place',
+      countryId: state.sequence[state.index]?.id ?? '',
+      selectedId,
+    });
+  }
+
+  it('matches stable IDs and records every wrong selection before success', () => {
+    let state = initialGame(sequence);
+    state = place(state, 'mn');
+    state = place(state, 'se');
+    state = place(state, 'mn');
+    expect(state.currentSelections).toEqual(['mn', 'se', 'mn']);
+    expect(state.incorrectAttempts).toBe(3);
+    expect(state.currentAttempts).toBe(3);
+    expect(state.correct).toBe(0);
+    expect(state.status).toBe('playing');
+    expect(state.feedback).toBe('incorrect');
+
+    state = place(state, 'fi');
+    expect(state.correct).toBe(1);
+    expect(state.status).toBe('correct');
+    expect(state.history[0]).toMatchObject({
+      country: country('fi'),
+      outcome: 'correct',
+      attempts: 4,
+      incorrectSelections: ['mn', 'se', 'mn'],
+    });
+    expect(getAccuracy(state)).toBe(25);
+    expect(place(state, 'fi')).toBe(state);
+    expect(place(state, 'fr')).toBe(state);
+  });
+
+  it('ignores invalid names and IDs instead of accepting aliases as map selections', () => {
+    const state = initialGame(sequence);
+    for (const selectedId of ['', 'Finland', 'FI', 'unknown', 'xx'])
+      expect(place(state, selectedId)).toBe(state);
+  });
+
+  it('clears round selections on advance and restart while preserving resolved history', () => {
+    let state = place(place(initialGame(sequence), 'se'), 'fi');
+    state = gameReducer(state, { type: 'next', countryId: 'fi' });
+    expect(state.currentSelections).toEqual([]);
+    expect(state.currentAttempts).toBe(0);
+    expect(state.history[0].incorrectSelections).toEqual(['se']);
+    expect(state.feedback).toBe('idle');
+    expect(gameReducer(state, { type: 'place', countryId: 'fi', selectedId: 'fi' })).toBe(state);
+    expect(gameReducer(state, { type: 'next', countryId: 'fi' })).toBe(state);
+    state = gameReducer(state, { type: 'start', sequence });
+    expect(state).toEqual(initialGame(sequence));
+  });
+
+  it('allows completed countries to be selected again as wrong guesses', () => {
+    let state = place(initialGame(sequence), 'fi');
+    state = gameReducer(state, { type: 'next', countryId: 'fi' });
+    state = place(state, 'fi');
+    expect(state.feedback).toBe('incorrect');
+    expect(state.incorrectAttempts).toBe(1);
+    expect(state.correct).toBe(1);
+    expect(state.currentSelections).toEqual(['fi']);
+  });
+
+  it('completes every country without repetition using the existing filtered order', () => {
+    for (const mode of ['linear', 'random'] as const) {
+      const selected = createSequence({ ...allLinear, mode, continents: ['Europe'], letters: ['F'] }, rng(23));
+      let state = initialGame(selected);
+      for (const target of selected) {
+        state = place(state, target.id);
+        state = gameReducer(state, { type: 'next', countryId: target.id });
+      }
+      expect(state.status).toBe('complete');
+      expect(state.correct).toBe(2);
+      expect(state.history.map((result) => result.country.id).sort()).toEqual(['fi', 'fr']);
+      expect(getAccuracy(state)).toBe(100);
+    }
+  });
+});

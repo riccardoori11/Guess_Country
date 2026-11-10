@@ -71,7 +71,7 @@ export function SettingsPanel({
       </div>
       <div className="setting-section">
         <label className="eyebrow" id={`${id}-mode-label`}>
-          GAME MODE
+          GAME ORDER
         </label>
         <div
           className="mode-switch"
@@ -97,8 +97,8 @@ export function SettingsPanel({
         </div>
         <p className="setting-description">
           {preferences.mode === 'random'
-            ? 'A little surprise with every flag.'
-            : 'An A–Z journey, one country at a time.'}
+            ? 'A shuffled journey with no repeats.'
+            : 'Sequential: an A–Z journey, one country at a time.'}
         </p>
       </div>
       <div className="setting-section continents-section">
@@ -205,8 +205,8 @@ export function SettingsPanel({
           ))}
         </div>
         <p className="letter-note" id={`${id}-letters-note`}>
-          Uses country names, not answer aliases. Both game modes work with
-          any letters.
+          Uses country names, not answer aliases. Both games and orders
+          work with any letters.
         </p>
       </section>
       <div
