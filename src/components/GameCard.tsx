@@ -22,6 +22,8 @@ import {
   X,
 } from 'lucide-react';
 import { FlagImage } from './FlagImage';
+import { capitalsByCountry } from '../data/capitals';
+import './capital-game.css';
 import {
   getAccuracy,
   type GameAction,
@@ -37,6 +39,7 @@ interface Props {
   restartDisabled: boolean;
   emptyMessage?: string;
   settingsOpen: boolean;
+  activity?: 'flag' | 'capital';
 }
 export function GameCard({
   game,
@@ -46,7 +49,12 @@ export function GameCard({
   restartDisabled,
   emptyMessage,
   settingsOpen,
+  activity = 'flag',
 }: Props) {
+  const capitalMode = activity === 'capital';
+  const answerId = capitalMode ? 'capital-answer' : 'country-answer';
+  const feedbackId = capitalMode ? 'capital-feedback' : 'answer-feedback';
+  const completionId = capitalMode ? 'capital-completion-title' : 'completion-title';
   const [answer, setAnswer] = useState('');
   const [hint, setHint] = useState(false);
   const answerRef = useRef<HTMLInputElement>(null);
@@ -54,6 +62,7 @@ export function GameCard({
   const completionRef = useRef<HTMLHeadingElement>(null);
   const lastAction = useRef(0);
   const country = game.sequence[game.index];
+  const capital = country ? capitalsByCountry[country.id] : undefined;
   const resolved = game.status !== 'playing';
   const progress = game.sequence.length
     ? (game.history.length / game.sequence.length) * 100
@@ -84,13 +93,13 @@ export function GameCard({
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!country || resolved) return;
-    act({ type: 'guess', value: answer, countryId: country.id });
+    act({ type: capitalMode ? 'capital' : 'guess', value: answer, countryId: country.id });
     if (answer.trim()) answerRef.current?.select();
   }
 
   if (!game.sequence.length)
     return (
-      <section className="game-card empty-game panel">
+      <section className="game-card empty-game panel" aria-label={capitalMode ? 'Guess the capital' : undefined}>
         <Globe2 size={48} />
         <span className="eyebrow">YOUR NEXT ADVENTURE</span>
         <h2>A whole world awaits.</h2>
@@ -101,7 +110,7 @@ export function GameCard({
     return (
       <section
         className="game-card completion-card panel"
-        aria-labelledby="completion-title"
+        aria-labelledby={completionId}
       >
         <div className="completion-globe">
           <Trophy size={43} strokeWidth={1.5} />
@@ -109,7 +118,7 @@ export function GameCard({
           <Sparkles size={16} className="sparkle-two" />
         </div>
         <span className="eyebrow">ROUND COMPLETE</span>
-        <h2 id="completion-title" ref={completionRef} tabIndex={-1}>
+        <h2 id={completionId} ref={completionRef} tabIndex={-1}>
           What a world of discovery.
         </h2>
         <p>
@@ -124,7 +133,7 @@ export function GameCard({
               {game.correct}
               <small>/{game.sequence.length}</small>
             </strong>
-            <span>Countries guessed</span>
+            <span>{capitalMode ? 'Capitals guessed' : 'Countries guessed'}</span>
           </div>
           <div>
             <strong>
@@ -166,7 +175,7 @@ export function GameCard({
             {game.history.map((result) => (
               <div className="review-row" key={result.country.id}>
                 <img src={result.country.flag} alt="" />
-                <span>{result.country.name}</span>
+                <span>{result.country.name}{capitalMode && <> — {capitalsByCountry[result.country.id].name}</>}</span>
                 <span className={`outcome ${result.outcome}`}>
                   {result.outcome}
                 </span>
@@ -178,11 +187,11 @@ export function GameCard({
     );
 
   return (
-    <section className="game-card panel" aria-label="Guess the flag">
+    <section className="game-card panel" aria-label={capitalMode ? 'Guess the capital' : 'Guess the flag'}>
       <div className="game-topline">
         <span>
-          <Flag size={14} />
-          THE FLAG CHALLENGE
+          {capitalMode ? <MapPin size={14} /> : <Flag size={14} />}
+          {capitalMode ? 'THE CAPITAL CHALLENGE' : 'THE FLAG CHALLENGE'}
         </span>
         <span className="game-mode-badge">
           {mode === 'random' ? (
@@ -196,7 +205,7 @@ export function GameCard({
       <div className="round-progress">
         <div>
           <span>
-            Flag <strong>{game.index + 1}</strong>
+            {capitalMode ? 'Country' : 'Flag'} <strong>{game.index + 1}</strong>
             <span className="progress-total">
               {' '}
               / {game.sequence.length}
@@ -215,7 +224,7 @@ export function GameCard({
           <span style={{ width: `${progress}%` }} />
         </div>
       </div>
-      <div className="flag-stage" key={country.id}>
+      <div className={`flag-stage${capitalMode ? ' capital-stage' : ''}`} key={country.id}>
         <div className="stage-coordinate coordinate-top">
           EXPLORING PLANET EARTH
         </div>
@@ -223,23 +232,31 @@ export function GameCard({
         <span className="stage-cross cross-two" />
         <span className="stage-cross cross-three" />
         <span className="stage-cross cross-four" />
-        <div className="flag-image-wrap">
+        {capitalMode ? <div className="capital-country">
+          <img src={country.flag} alt="" width={72} height={48} />
+          <span className="eyebrow">NAME THE CAPITAL OF</span>
+          <h2 id="capital-country">{country.name}</h2>
+        </div> : <div className="flag-image-wrap">
           <FlagImage
             key={country.id}
             country={country}
             revealed={resolved}
           />
-        </div>
+        </div>}
         <span className="stage-coordinate coordinate-bottom">
           <span className="tiny-dot" />
-          {hint || resolved
+          {capitalMode || hint || resolved
             ? country.continent.toUpperCase()
             : 'A WORLD WAITING TO BE RECOGNIZED'}
         </span>
       </div>
       <div className="answer-section">
         <h2>
-          {resolved
+          {capitalMode ? resolved
+            ? game.status === 'correct'
+              ? 'You know your capitals.'
+              : 'A new capital to remember.'
+            : 'What is its capital?' : resolved
             ? game.status === 'correct'
               ? 'You know your flags.'
               : 'A new country to remember.'
@@ -258,30 +275,30 @@ export function GameCard({
                 event.preventDefault();
             }}
           >
-            <label className="sr-only" htmlFor="country-answer">
-              Country name
+            <label className="sr-only" htmlFor={answerId}>
+              {capitalMode ? `Capital of ${country.name}` : 'Country name'}
             </label>
             <div
               className={`answer-input-wrap ${game.feedback === 'incorrect' ? 'input-incorrect' : ''}`}
             >
               <MapPin size={19} />
               <input
-                id="country-answer"
+                id={answerId}
                 ref={answerRef}
                 value={answer}
                 onChange={(event) => setAnswer(event.target.value)}
-                placeholder="Country name…"
+                placeholder={capitalMode ? 'Capital city…' : 'Country name…'}
                 autoComplete="off"
                 autoCapitalize="words"
                 spellCheck={false}
-                aria-describedby="answer-feedback"
+                aria-describedby={feedbackId}
                 aria-invalid={game.feedback === 'incorrect'}
               />
               <kbd aria-hidden="true">↵</kbd>
             </div>
             <div
               className={`answer-feedback ${game.feedback}`}
-              id="answer-feedback"
+              id={feedbackId}
               aria-live="polite"
             >
               {game.feedback === 'incorrect' ? (
@@ -289,18 +306,20 @@ export function GameCard({
                   <X size={14} />
                   Not quite.{' '}
                   {hint
-                    ? `Try a country in ${country.continent}.`
+                    ? capitalMode
+                      ? `The capital starts with ${capital?.name[0]}.`
+                      : `Try a country in ${country.continent}.`
                     : 'Give it another try — you’ve got this.'}
                 </>
-              ) : game.feedback === 'empty' ? (
+              ) : game.feedback === 'empty' && !(capitalMode && hint) ? (
                 <>
                   <MapPin size={14} />
-                  Type a country name to make your guess.
+                  {capitalMode ? 'Type a capital city to make your guess.' : 'Type a country name to make your guess.'}
                 </>
               ) : hint ? (
                 <>
-                  <Globe2 size={14} />A little nudge: this country is in{' '}
-                  {country.continent}.
+                  {capitalMode ? <><Lightbulb size={14} />A little nudge: the capital starts with {capital?.name[0]}.</> : <><Globe2 size={14} />A little nudge: this country is in{' '}
+                  {country.continent}.</>}
                 </>
               ) : (
                 <>
@@ -332,12 +351,13 @@ export function GameCard({
                       ? 'SKIPPED — NOW YOU KNOW'
                       : 'MEET YOUR NEW DISCOVERY'}
                 </span>
-                <strong>{country.name}</strong>
+                <strong>{capitalMode ? capital?.name : country.name}</strong>
               </div>
               {game.status === 'correct' && (
                 <Sparkles size={20} className="result-sparkles" />
               )}
             </div>
+            {capitalMode && capital?.note && <p className="capital-note">{capital.note}</p>}
             <button
               className="primary-button next-button"
               ref={nextRef}
@@ -349,7 +369,7 @@ export function GameCard({
             >
               {game.index === game.sequence.length - 1
                 ? 'See your results'
-                : 'Next flag'}
+                : capitalMode ? 'Next country' : 'Next flag'}
               <ArrowRight size={17} />
             </button>
           </div>

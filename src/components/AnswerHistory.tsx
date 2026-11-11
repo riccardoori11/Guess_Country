@@ -2,8 +2,9 @@ import { useId } from 'react';
 import { Check, Eye, X } from 'lucide-react';
 import type { Result } from '../lib/game';
 import { countries } from '../data/countries';
+import { capitalsByCountry } from '../data/capitals';
 
-export function AnswerHistory({ history, placement = false }: { history: Result[]; placement?: boolean }) {
+export function AnswerHistory({ history, placement = false, capital = false }: { history: Result[]; placement?: boolean; capital?: boolean }) {
   const headingId = useId();
   if (placement) return (
     <section className="answer-history placement-history" aria-labelledby={headingId}>
@@ -31,16 +32,16 @@ export function AnswerHistory({ history, placement = false }: { history: Result[
   const groups = [
     {
       type: 'correct',
-      title: 'Correct Answers',
+      title: capital ? 'Correct Capitals' : 'Correct Answers',
       results: history.filter((result) => result.outcome === 'correct'),
-      empty: 'Countries you identify will appear here.',
+      empty: capital ? 'Capitals you identify will appear here.' : 'Countries you identify will appear here.',
       Icon: Check,
     },
     {
       type: 'incorrect',
       title: 'Incorrect Answers',
       results: history.filter((result) => result.outcome !== 'correct'),
-      empty: 'Revealed and skipped countries will appear here.',
+      empty: capital ? 'Revealed and skipped capitals will appear here.' : 'Revealed and skipped countries will appear here.',
       Icon: X,
     },
   ];
@@ -70,7 +71,7 @@ export function AnswerHistory({ history, placement = false }: { history: Result[
                       event.currentTarget.style.visibility = 'hidden';
                     }}
                   />
-                  <span>{country.name}</span>
+                  <span>{country.name}{capital && ` — ${capitalsByCountry[country.id].name}`}</span>
                   <Icon size={12} aria-hidden="true" />
                 </li>
               ))}

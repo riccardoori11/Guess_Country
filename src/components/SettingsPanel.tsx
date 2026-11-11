@@ -205,7 +205,7 @@ export function SettingsPanel({
           ))}
         </div>
         <p className="letter-note" id={`${id}-letters-note`}>
-          Uses country names, not answer aliases. Both games and orders
+          Uses country names, not capitals or answer aliases. All games and orders
           work with any letters.
         </p>
       </section>

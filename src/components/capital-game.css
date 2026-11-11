@@ -1,0 +1,35 @@
+.capital-stage {
+  min-height: 300px;
+}
+.capital-country {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 100%;
+  text-align: center;
+}
+.capital-country > img {
+  object-fit: contain;
+  border-radius: 3px;
+  filter: drop-shadow(0 3px 6px var(--shadow-flag));
+}
+.capital-country h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(24px, 3vw, 34px);
+  letter-spacing: -1px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.capital-note {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .capital-stage { min-height: 260px; }
+}

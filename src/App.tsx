@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useReducer, useState } from 'react'
 import {
   ArrowRight,
   BookOpen,
+  Building2,
   Check,
   Compass,
   Flag,
@@ -38,22 +39,30 @@ const PlacementGame = lazy(() =>
     default: module.PlacementGame,
   })),
 );
-type Activity = 'flag' | 'placement';
+const ACTIVITY_LABELS = {
+  flag: 'Guess the Flag',
+  placement: 'Place the Country',
+  capital: 'Guess the Capital',
+} as const;
+type Activity = keyof typeof ACTIVITY_LABELS;
 
 export default function App() {
   const [savedPreferences] = useState(loadPreferences);
   const [activity, setActivity] = useState<Activity>('flag');
   const [placementVisited, setPlacementVisited] = useState(false);
+  const [capitalVisited, setCapitalVisited] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [rounds, setRounds] = useState({
     flag: { preferences: savedPreferences, draft: savedPreferences },
     placement: { preferences: savedPreferences, draft: savedPreferences },
+    capital: { preferences: savedPreferences, draft: savedPreferences },
   });
   const { preferences, draft } = rounds[activity];
   const initialSequences = useMemo(
     () => ({
       flag: createSequence(savedPreferences),
       placement: createSequence(savedPreferences),
+      capital: createSequence(savedPreferences),
     }),
     [savedPreferences],
   );
@@ -63,8 +72,11 @@ export default function App() {
   const [placementGame, placementDispatch] = useReducer(
     gameReducer, initialSequences.placement, initialGame,
   );
-  const game = activity === 'flag' ? flagGame : placementGame;
-  const dispatch = activity === 'flag' ? flagDispatch : placementDispatch;
+  const [capitalGame, capitalDispatch] = useReducer(
+    gameReducer, initialSequences.capital, initialGame,
+  );
+  const game = { flag: flagGame, placement: placementGame, capital: capitalGame }[activity];
+  const dispatch = { flag: flagDispatch, placement: placementDispatch, capital: capitalDispatch }[activity];
   const [modal, setModal] = useState<
     'help' | 'about' | 'settings' | 'restart' | null
   >(null);
@@ -96,9 +108,10 @@ export default function App() {
   }
   function switchActivity(next: Activity) {
     if (next === 'placement') setPlacementVisited(true);
+    if (next === 'capital') setCapitalVisited(true);
     setActivity(next);
     setAnnouncement(
-      `${next === 'flag' ? 'Guess the Flag' : 'Place the Country'}. Your round has been preserved.`,
+      `${ACTIVITY_LABELS[next]}. Your round has been preserved.`,
     );
   }
   function startRound(next = draft) {
@@ -217,7 +230,14 @@ export default function App() {
           >
             <MapPin size={17} /> Place the Country
           </button>
-          <span>Two ways to explore. Your progress stays with you.</span>
+          <button
+            className={activity === 'capital' ? 'selected' : ''}
+            aria-pressed={activity === 'capital'}
+            onClick={() => switchActivity('capital')}
+          >
+            <Building2 size={17} /> Guess the Capital
+          </button>
+          <span>Three ways to explore. Your progress stays with you.</span>
         </div>
         <div className={`game-layout ${activity === 'placement' ? 'game-layout--placement' : ''}`}>
           <aside className="settings-column" aria-label="Game settings">
@@ -232,6 +252,9 @@ export default function App() {
                   {activity === 'flag' ? <>
                     Short names work, too.<br />
                     “USA”, “UK”, and “UAE” are all welcome here.
+                  </> : activity === 'capital' ? <>
+                    A familiar city, a fresh discovery.<br />
+                    Accents and common alternate spellings are welcome.
                   </> : <>
                     Zoom in for a closer look.<br />
                     Neutral circles make the smallest countries selectable.
@@ -282,13 +305,29 @@ export default function App() {
                 />
               </Suspense>
             </div>}
+            {capitalVisited && <div hidden={activity !== 'capital'}>
+              <GameCard
+                activity="capital"
+                game={capitalGame}
+                mode={rounds.capital.preferences.mode}
+                dispatch={capitalDispatch}
+                onRestart={() => startRound()}
+                restartDisabled={!canStart}
+                emptyMessage={emptySelectionMessage(
+                  rounds.capital.preferences.continents,
+                  rounds.capital.preferences.letters,
+                  capitalGame.sequence.length,
+                )}
+                settingsOpen={modal !== null || activity !== 'capital'}
+              />
+            </div>}
             <div className="below-card-note">
               <Globe2 size={15} />
-              <span>{activity === 'flag' ? 'Every flag has a story. Let’s discover yours.' : 'One blank map. A whole world to discover.'}</span>
+              <span>{activity === 'flag' ? 'Every flag has a story. Let’s discover yours.' : activity === 'capital' ? 'Every country has a capital to discover.' : 'One blank map. A whole world to discover.'}</span>
             </div>
-            <AnswerHistory history={game.history} placement={activity === 'placement'} />
+            <AnswerHistory history={game.history} placement={activity === 'placement'} capital={activity === 'capital'} />
           </div>
-          <ScorePanel game={game} placement={activity === 'placement'} />
+          <ScorePanel game={game} placement={activity === 'placement'} capital={activity === 'capital'} />
         </div>
         <section className="bottom-strip">
           <div>
@@ -370,7 +409,7 @@ export default function App() {
               <div>
                 <h3>Make the world your own</h3>
                 <p>
-                  Choose Guess the Flag or Place the Country. Each game
+                  Choose Guess the Flag, Place the Country, or Guess the Capital. Each game
                   keeps its own progress while you switch. Choose continents,
                   starting letters, and an order independently.
                   Random shuffles the eligible countries;
@@ -386,11 +425,15 @@ export default function App() {
             <div>
               <span>02</span>
               <div>
-                <h3>Recognize a flag. Locate a country.</h3>
+                <h3>Flags, places, and capital cities.</h3>
                 <p>
                   Type the country’s name and press Enter or Check answer.
                   Capitalization, extra spaces, and accents don’t matter.
                   Common names and abbreviations work, too.
+                  In Guess the Capital, type the capital of the displayed
+                  country. Case, accents, and listed alternate spellings are
+                  accepted. Filters always use the country’s name and continent,
+                  including when you are guessing its capital.
                   In Place the Country, click a country’s boundaries or a
                   neutral small-country circle. Drag to pan; use the zoom
                   controls or pinch to see more detail. The map also supports
@@ -406,6 +449,9 @@ export default function App() {
                   Try again after a wrong guess, ask for a continent hint,
                   reveal the answer, or skip. Select Next flag when you’re
                   ready. Every country appears once per round.
+                  In Guess the Capital, a hint gives the capital’s first letter.
+                  Reveal answer shows the accepted capital and explains special
+                  cases. Use Next country when you’re ready.
                   On the map, incorrect selections flash red and you can
                   retry. Located countries stay green. Use Next Country,
                   or enable automatic advance. Every click counts as an
@@ -518,7 +564,16 @@ export default function App() {
             point targets. Disconnected territories count together.
             Geographic boundaries follow the source’s cartographic policy;
             their display does not imply a position on disputed sovereignty.
-            Both games use the same 195-country list and continent filters.
+            All three games use the same 195-country list and continent filters.
+          </p>
+          <h3>About the capitals</h3>
+          <p>
+            Capitals are stored locally, keyed by the atlas’s ISO country codes,
+            using Natural Earth data with documented updates from government
+            and UN sources. Where a country has multiple capitals or a separate
+            seat of government, we accept explicitly listed cities and show a
+            note with the answer. Common spellings of the same city are accepted;
+            guesses must match a listed answer.
           </p>
         </Modal>
       )}

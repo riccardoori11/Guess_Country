@@ -72,7 +72,7 @@
 }
 @media (max-width: 760px) {
   .activity-selector { flex-wrap: wrap; margin-bottom: 18px; }
-  .activity-selector button { flex: 1; font-size: 12px; padding: 10px 8px; gap: 6px; }
+  .activity-selector button { flex: 1 1 135px; font-size: 12px; padding: 10px 8px; gap: 6px; }
   .activity-selector > span { width: 100%; margin: 4px 0 0; text-align: center; }
   .auto-advance-option { font-size: 11px; line-height: 1.6; }
 }

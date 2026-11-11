@@ -1,4 +1,5 @@
 import { countries, type Continent, type Country } from '../data/countries';
+import { capitalsByCountry } from '../data/capitals';
 import { eligibleCountries, type Letter } from './filters';
 
 export type GameMode = 'random' | 'linear';
@@ -33,6 +34,7 @@ export interface GameState {
 export type GameAction =
   | { type: 'start'; sequence: Country[] }
   | { type: 'guess'; countryId: string; value: string }
+  | { type: 'capital'; countryId: string; value: string }
   | { type: 'place'; countryId: string; selectedId: string }
   | { type: 'reveal'; countryId: string }
   | { type: 'skip'; countryId: string }
@@ -61,6 +63,20 @@ export function isCorrectAnswer(
       (name) => normalizeAnswer(name) === normalized,
     )
   );
+}
+
+function normalizeCapitalAnswer(value: string): string {
+  // Ignore optional city punctuation such as the comma in Washington, D.C.
+  // Answers must still match an explicitly listed capital or spelling.
+  return normalizeAnswer(value).replace(/,/g, '').replace(/\s+/g, ' ').trim();
+}
+
+export function isCorrectCapitalAnswer(country: Country, answer: string): boolean {
+  const capital = capitalsByCountry[country.id];
+  const normalized = normalizeCapitalAnswer(answer);
+  return Boolean(capital && normalized && [capital.name, ...capital.aliases].some(
+    (name) => normalizeCapitalAnswer(name) === normalized,
+  ));
 }
 
 export function createSequence(
@@ -168,14 +184,19 @@ export function gameReducer(
       streak: 0,
     };
   }
-  const normalized = normalizeAnswer(action.value);
+  const normalized = action.type === 'capital'
+    ? normalizeCapitalAnswer(action.value)
+    : normalizeAnswer(action.value);
   if (!normalized) return { ...state, feedback: 'empty' };
   // Repeated Enter / button clicks on an unchanged wrong answer count once.
   if (normalized === state.lastGuess)
     return state.feedback === 'incorrect'
       ? state
       : { ...state, feedback: 'incorrect' };
-  if (isCorrectAnswer(state.sequence[state.index], action.value))
+  const correct = action.type === 'capital'
+    ? isCorrectCapitalAnswer(state.sequence[state.index], action.value)
+    : isCorrectAnswer(state.sequence[state.index], action.value);
+  if (correct)
     return resolve(state, 'correct');
   return {
     ...state,

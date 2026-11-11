@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { getAccuracy, type GameState } from '../lib/game';
 
-export function ScorePanel({ game, placement = false }: { game: GameState; placement?: boolean }) {
+export function ScorePanel({ game, placement = false, capital = false }: { game: GameState; placement?: boolean; capital?: boolean }) {
   const accuracy = getAccuracy(game);
   const attempts = game.correct + game.incorrectAttempts;
   const explored = game.history.length;
@@ -49,7 +49,7 @@ export function ScorePanel({ game, placement = false }: { game: GameState; place
               <i className="stat-icon correct-icon">
                 <Check size={14} />
               </i>
-              {placement ? 'Countries located' : 'Correct answers'}
+              {placement ? 'Countries located' : capital ? 'Capitals guessed' : 'Correct answers'}
             </span>
             <strong data-testid="correct-count">{game.correct}</strong>
           </div>
@@ -98,7 +98,7 @@ export function ScorePanel({ game, placement = false }: { game: GameState; place
         </div>
       </section>
       <section className="world-panel panel">
-        <span className="eyebrow">{placement ? 'ONE COUNTRY AT A TIME' : 'ONE FLAG AT A TIME'}</span>
+        <span className="eyebrow">{placement ? 'ONE COUNTRY AT A TIME' : capital ? 'ONE CAPITAL AT A TIME' : 'ONE FLAG AT A TIME'}</span>
         <div className="world-map">
           <img src="/world-map.svg" alt="" />
           <span className="map-pin pin-one" />
@@ -121,7 +121,7 @@ export function ScorePanel({ game, placement = false }: { game: GameState; place
             <>
               195 countries. Countless stories.
               <br />
-              How many will you recognize?
+              {capital ? 'How many capitals will you remember?' : 'How many will you recognize?'}
             </>
           )}
         </p>
