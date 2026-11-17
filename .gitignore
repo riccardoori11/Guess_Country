@@ -17,3 +17,8 @@ playwright-report/
 /.openai/
 /AGENTS.md
 /DEPLOYMENT.md
+
+# Wrangler local state (local Durable Object storage, temp bundles) and dev secrets.
+.wrangler/
+.dev.vars
+.dev.vars.*

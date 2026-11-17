@@ -13,6 +13,7 @@ import {
   RotateCcw,
   Settings2,
   Sparkles,
+  Users,
 } from 'lucide-react';
 import { CONTINENTS } from './data/countries';
 import {
@@ -39,6 +40,11 @@ const PlacementGame = lazy(() =>
     default: module.PlacementGame,
   })),
 );
+const MultiplayerView = lazy(() =>
+  import('./components/MultiplayerView').then((module) => ({
+    default: module.MultiplayerView,
+  })),
+);
 const ACTIVITY_LABELS = {
   flag: 'Guess the Flag',
   placement: 'Place the Country',
@@ -51,6 +57,12 @@ export default function App() {
   const [activity, setActivity] = useState<Activity>('flag');
   const [placementVisited, setPlacementVisited] = useState(false);
   const [capitalVisited, setCapitalVisited] = useState(false);
+  // Invite links (?room=CODE) open straight into multiplayer. The view stays
+  // mounted once visited so switching tabs doesn't drop the room connection.
+  const [multiplayer, setMultiplayer] = useState(() =>
+    new URLSearchParams(window.location.search).has('room'),
+  );
+  const [multiplayerVisited, setMultiplayerVisited] = useState(multiplayer);
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [rounds, setRounds] = useState({
     flag: { preferences: savedPreferences, draft: savedPreferences },
@@ -109,6 +121,7 @@ export default function App() {
   function switchActivity(next: Activity) {
     if (next === 'placement') setPlacementVisited(true);
     if (next === 'capital') setCapitalVisited(true);
+    setMultiplayer(false);
     setActivity(next);
     setAnnouncement(
       `${ACTIVITY_LABELS[next]}. Your round has been preserved.`,
@@ -127,8 +140,13 @@ export default function App() {
       `New ${next.mode} round started with ${sequence.length} countries, ${next.continents.length === 6 ? 'all continents' : next.continents.join(', ')}, and ${next.letters.length === LETTERS.length ? 'all letters' : `letters ${next.letters.join(', ')}`}.`,
     );
   }
+  function openMultiplayer() {
+    setMultiplayer(true);
+    setMultiplayerVisited(true);
+    setAnnouncement('Multiplayer. Your solo rounds have been preserved.');
+  }
   function requestRestart() {
-    if (!canStart) return;
+    if (!canStart || multiplayer) return;
     if (game.history.length || game.incorrectAttempts) setModal('restart');
     else startRound();
   }
@@ -181,7 +199,7 @@ export default function App() {
               className="new-round-button"
               aria-label="New round"
               onClick={requestRestart}
-              disabled={!canStart}
+              disabled={!canStart || multiplayer}
             >
               <RotateCcw size={15} />
               <span>New round</span>
@@ -211,34 +229,47 @@ export default function App() {
             </div>
             <div>
               <span>YOUR PASSPORT TO DISCOVERY</span>
-              <p>No timer. No pressure. Just explore.</p>
+              <p>Explore at your own pace, or race your friends.</p>
             </div>
           </div>
         </section>
         <div className="activity-selector" role="group" aria-label="Game mode">
           <button
-            className={activity === 'flag' ? 'selected' : ''}
-            aria-pressed={activity === 'flag'}
+            className={!multiplayer && activity === 'flag' ? 'selected' : ''}
+            aria-pressed={!multiplayer && activity === 'flag'}
             onClick={() => switchActivity('flag')}
           >
             <Flag size={17} /> Guess the Flag
           </button>
           <button
-            className={activity === 'placement' ? 'selected' : ''}
-            aria-pressed={activity === 'placement'}
+            className={!multiplayer && activity === 'placement' ? 'selected' : ''}
+            aria-pressed={!multiplayer && activity === 'placement'}
             onClick={() => switchActivity('placement')}
           >
             <MapPin size={17} /> Place the Country
           </button>
           <button
-            className={activity === 'capital' ? 'selected' : ''}
-            aria-pressed={activity === 'capital'}
+            className={!multiplayer && activity === 'capital' ? 'selected' : ''}
+            aria-pressed={!multiplayer && activity === 'capital'}
             onClick={() => switchActivity('capital')}
           >
             <Building2 size={17} /> Guess the Capital
           </button>
-          <span>Three ways to explore. Your progress stays with you.</span>
+          <button
+            className={multiplayer ? 'selected' : ''}
+            aria-pressed={multiplayer}
+            onClick={openMultiplayer}
+          >
+            <Users size={17} /> Multiplayer
+          </button>
+          <span>Play solo or with friends. Your progress stays with you.</span>
         </div>
+        {multiplayerVisited && <div hidden={!multiplayer}>
+          <Suspense fallback={<section className="panel map-loading" role="status">Loading multiplayer…</section>}>
+            <MultiplayerView />
+          </Suspense>
+        </div>}
+        <div hidden={multiplayer}>
         <div className={`game-layout ${activity === 'placement' ? 'game-layout--placement' : ''}`}>
           <aside className="settings-column" aria-label="Game settings">
             {settings}
@@ -276,7 +307,7 @@ export default function App() {
                   rounds.flag.preferences.letters,
                   flagGame.sequence.length,
                 )}
-                settingsOpen={modal !== null || activity !== 'flag'}
+                settingsOpen={modal !== null || multiplayer || activity !== 'flag'}
               />
             </div>
             {placementVisited && <div hidden={activity !== 'placement'}>
@@ -300,7 +331,7 @@ export default function App() {
                     rounds.placement.preferences.letters,
                     placementGame.sequence.length,
                   )}
-                  settingsOpen={modal !== null || activity !== 'placement'}
+                  settingsOpen={modal !== null || multiplayer || activity !== 'placement'}
                   autoAdvance={autoAdvance}
                 />
               </Suspense>
@@ -318,7 +349,7 @@ export default function App() {
                   rounds.capital.preferences.letters,
                   capitalGame.sequence.length,
                 )}
-                settingsOpen={modal !== null || activity !== 'capital'}
+                settingsOpen={modal !== null || multiplayer || activity !== 'capital'}
               />
             </div>}
             <div className="below-card-note">
@@ -364,6 +395,7 @@ export default function App() {
             <span>{game.sequence.length} countries in your round</span>
           </span>
         </section>
+        </div>
       </main>
       <footer className="site-footer">
         <div>
@@ -545,8 +577,11 @@ export default function App() {
           </p>
           <h3>Made for a little focus</h3>
           <p>
-            No timer, no account, no leaderboard. Preferences stay in this
-            browser. Your score lasts for the current round. Maps are
+            Solo games have no timer and no leaderboard. Multiplayer adds a
+            countdown and a scoreboard for the room only. There are no
+            accounts anywhere: rooms and their scores are deleted after an
+            hour without activity. Preferences and your multiplayer name stay
+            in this browser. Your solo score lasts for the current round. Maps are
             adapted from public domain{' '}
             <a
               href="https://www.naturalearthdata.com/"
