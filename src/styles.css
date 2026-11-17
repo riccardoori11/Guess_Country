@@ -1891,9 +1891,6 @@ h1 > span {
     margin-left: 12px;
     gap: 18px;
   }
-  .header-nav > button:last-child {
-    display: none;
-  }
   .game-layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 22px;
@@ -2029,11 +2026,8 @@ h1 > span {
     margin-right: 0;
     gap: 16px;
   }
-  .header-nav .nav-active,
-  .header-nav > button:last-child {
-    display: none;
-  }
-  .header-nav > button {
+  .header-nav > button,
+  .header-nav > a {
     font-size: 12px;
   }
   .new-round-button {

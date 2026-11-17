@@ -1021,3 +1021,30 @@ describe('appearance and game state', () => {
     ).toBe('0');
   });
 });
+
+describe('header navigation', () => {
+  it('offers Let’s play and Multiplayer, and switches between them', async () => {
+    await render();
+    const nav = container.querySelector('.header-nav')!;
+    expect([...nav.children].map((item) => item.textContent?.trim())).toEqual([
+      'Let’s play',
+      'Multiplayer',
+    ]);
+    const play = nav.querySelector('a')!;
+    expect(play.getAttribute('aria-current')).toBe('page');
+
+    await click(button('Multiplayer', nav));
+    await act(async () => {
+      await import('./components/MultiplayerView');
+    });
+    expect(button('Multiplayer', nav).getAttribute('aria-current')).toBe('page');
+    expect(play.hasAttribute('aria-current')).toBe(false);
+    expect(container.querySelector('.mp-entry')).not.toBeNull();
+    expect(container.querySelector<HTMLElement>('.game-layout')?.closest('[hidden]')).not.toBeNull();
+
+    await click(play);
+    expect(play.getAttribute('aria-current')).toBe('page');
+    expect(container.querySelector<HTMLElement>('.game-layout')?.closest('[hidden]')).toBeNull();
+    expect(container.querySelector('.mp-entry')?.closest('[hidden]')).not.toBeNull();
+  });
+});

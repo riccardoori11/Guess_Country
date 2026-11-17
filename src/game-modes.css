@@ -76,3 +76,9 @@
   .activity-selector > span { width: 100%; margin: 4px 0 0; text-align: center; }
   .auto-advance-option { font-size: 11px; line-height: 1.6; }
 }
+/* Multiplayer lives in the header nav; phones hide that nav, so the
+   game-mode tabs offer it instead below 560px. */
+.activity-selector .activity-multiplayer { display: none; }
+@media (max-width: 560px) {
+  .activity-selector .activity-multiplayer { display: inline-flex; }
+}

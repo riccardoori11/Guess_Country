@@ -177,13 +177,23 @@ export default function App() {
             </span>
           </a>
           <nav className="header-nav" aria-label="Main navigation">
-            <a href="#play" className="nav-active">
+            <a
+              href="#play"
+              className={multiplayer ? '' : 'nav-active'}
+              aria-current={multiplayer ? undefined : 'page'}
+              onClick={() => {
+                if (multiplayer) switchActivity(activity);
+              }}
+            >
               Let’s play
               <span />
             </a>
-            <button onClick={() => setModal('help')}>How to play</button>
-            <button onClick={() => setModal('about')}>
-              About the atlas
+            <button
+              className={multiplayer ? 'nav-active' : ''}
+              aria-current={multiplayer ? 'page' : undefined}
+              onClick={openMultiplayer}
+            >
+              Multiplayer
             </button>
           </nav>
           <div className="header-actions">
@@ -255,14 +265,15 @@ export default function App() {
           >
             <Building2 size={17} /> Guess the Capital
           </button>
+          {/* Phones hide the header nav, so multiplayer is offered here instead. */}
           <button
-            className={multiplayer ? 'selected' : ''}
+            className={`activity-multiplayer ${multiplayer ? 'selected' : ''}`}
             aria-pressed={multiplayer}
             onClick={openMultiplayer}
           >
             <Users size={17} /> Multiplayer
           </button>
-          <span>Play solo or with friends. Your progress stays with you.</span>
+          <span>Three ways to explore. Your progress stays with you.</span>
         </div>
         {multiplayerVisited && <div hidden={!multiplayer}>
           <Suspense fallback={<section className="panel map-loading" role="status">Loading multiplayer…</section>}>
